@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% block title %}Announcements{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>📢 Announcements</h1>
+    <p>Create and manage platform announcements</p>
+</div>
+
+<!-- Create Announcement -->
+<div class="card mb-3">
+    <div class="card-header">
+        <h3>📝 Post New Announcement</h3>
+    </div>
+    <form method="POST" action="{{ url_for('manage_announcements') }}">
+        <div class="form-group">
+            <label class="form-label" for="title">Title *</label>
+            <input type="text" id="title" name="title" class="form-input" placeholder="Announcement title" required>
+        </div>
+        <div class="form-group">
+            <label class="form-label" for="content">Content *</label>
+            <textarea id="content" name="content" class="form-textarea" rows="3" placeholder="Announcement message..." required></textarea>
+        </div>
+        <div class="form-group">
+            <label class="form-label" for="target_role">Target Audience</label>
+            <select id="target_role" name="target_role" class="form-select" style="max-width: 200px;">
+                <option value="all">Everyone</option>
+                <option value="employee">Employees Only</option>
+                <option value="admin">Trainers Only</option>
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary">Post Announcement</button>
+    </form>
+</div>
+
+<!-- Existing Announcements -->
+<div class="section-header">
+    <h2 class="section-title">📋 All Announcements</h2>
+</div>
+
+{% if announcements %}
+    {% for a in announcements %}
+    <div class="announcement-item">
+        <div class="flex-between" style="margin-bottom: 0.5rem;">
+            <div class="announcement-title">{{ a.title }}</div>
+            <span class="badge badge-{% if a.target_role == 'all' %}info{% elif a.target_role == 'employee' %}employee{% else %}admin{% endif %}">
+                {{ a.target_role }}
+            </span>
+        </div>
+        <div class="announcement-body">{{ a.content }}</div>
+        <div class="announcement-meta">
+            By {{ a.author_name }} · {{ a.created_at|timeago }}
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+    <div class="empty-state">
+        <div class="empty-state-icon">📢</div>
+        <div class="empty-state-title">No Announcements</div>
+        <div class="empty-state-desc">Create your first announcement above.</div>
+    </div>
+{% endif %}
+{% endblock %}

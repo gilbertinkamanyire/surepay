@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+{% block title %}Create Assessment{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+    <a href="{{ url_for('course_detail', course_id=course.id) }}">{{ course.title }}</a>
+    <span class="breadcrumb-sep">›</span>
+    <span>Create Assessment</span>
+</div>
+
+<div class="page-header">
+    <h1>📝 Create Assessment</h1>
+    <p>Create a quiz for "{{ course.title }}"</p>
+</div>
+
+<div class="card" style="max-width: 800px;">
+    <form method="POST" action="{{ url_for('create_assessment', course_id=course.id) }}" id="quizForm">
+        <div class="form-row">
+            <div class="form-group">
+                <label class="form-label" for="title">Assessment Title *</label>
+                <input type="text" id="title" name="title" class="form-input" placeholder="e.g., Quiz 1: Chapter Review" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="time_limit">Time Limit (minutes)</label>
+                <input type="number" id="time_limit" name="time_limit" class="form-input" value="0" min="0">
+                <div class="form-hint">Set to 0 for no time limit</div>
+            </div>
+        </div>
+        
+        <div class="form-row" style="margin-top: 1rem;">
+            <div class="form-group" style="padding: 1rem; border: 1px dashed var(--border); border-radius: var(--radius); background: var(--bg-card);">
+                <label class="form-label" for="is_hidden">Visibility</label>
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <input type="checkbox" id="is_hidden" name="is_hidden" value="1" style="width: 18px; height: 18px;">
+                    <label for="is_hidden" style="font-weight: 700; cursor: pointer;">Hide from employee view</label>
+                </div>
+                <div class="form-hint" style="margin-top: 0.5rem;">If checked, employees will not see this assessment.</div>
+            </div>
+            <div class="form-group" style="padding: 1rem; border: 1px dashed var(--border); border-radius: var(--radius); background: var(--bg-card);">
+                <label class="form-label" for="available_until">Available Until (Expiry)</label>
+                <input type="datetime-local" id="available_until" name="available_until" class="form-input">
+                <div class="form-hint" style="margin-top: 0.5rem;">The assessment will disappear/expire for employees after this time.</div>
+            </div>
+        </div>
+
+        <div class="form-row" style="margin-top: 1rem;">
+            <div class="form-group">
+                <label class="form-label" for="lesson_id">Attach to Lesson (optional)</label>
+                <select id="lesson_id" name="lesson_id" class="form-input">
+                    <option value="">No lesson (course-level)</option>
+                    {% for l in lessons %}
+                    <option value="{{ l.id }}" {% if request.args.get('lesson_id')|int == l.id %}selected{% endif %}>{{ l.title }}</option>
+                    {% endfor %}
+                </select>
+                <div class="form-hint">Choose a lesson to make this assessment the questionnaire shown after that lesson.</div>
+            </div>
+        </div>
+
+        <div class="form-group" style="margin-top: 1rem;">
+            <label class="form-label" style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                <input type="checkbox" name="privacy_mode" value="1" style="width: 18px; height: 18px;">
+                <span>🔒 Enable High Grade Privacy (Disable highlighting/copying)</span>
+            </label>
+            <div class="form-hint" style="margin-top: 0.25rem; font-size: 0.85rem;">When enabled, employees will not be able to select, right-click, or copy the question text.</div>
+        </div>
+        
+        <hr style="border: none; border-top: 1px solid var(--border); margin: 1.5rem 0;">
+        
+        <div class="section-header">
+            <h3 class="section-title">Questions (Up to 100)</h3>
+            <p class="form-hint">Only questions with text will be saved. You can add as many as you need.</p>
+        </div>
+        
+        <div id="questionsContainer">
+            {% for i in range(100) %}
+            <div class="quiz-question" style="border-left: 4px solid var(--accent-surface); padding-left: 1.5rem; margin-bottom: 2rem;">
+                <div class="quiz-question-num" style="color: var(--accent);">Question {{ i + 1 }}</div>
+                <div class="form-group">
+                    <input type="text" name="question_{{ i }}" class="form-input" placeholder="Enter question text (Required for this slot to save)" {% if i == 0 %}required{% endif %}>
+                </div>
+                <div class="form-row">
+                    {% for o in range(4) %}
+                    <div class="form-group">
+                        <label class="form-label">Option {{ 'ABCD'[o] }}</label>
+                        <input type="text" name="option_{{ i }}_{{ o }}" class="form-input" placeholder="Option {{ 'ABCD'[o] }}" {% if i == 0 %}required{% endif %}>
+                        <label style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem; font-size: 0.85rem; cursor: pointer;">
+                            <input type="radio" name="correct_{{ i }}" value="{{ o }}" {% if o == 0 %}checked{% endif %}> 
+                            <span>Correct Answer</span>
+                        </label>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <div class="btn-group mt-2">
+            <button type="submit" class="btn btn-primary btn-lg">✅ Create Assessment</button>
+            <a href="{{ url_for('course_detail', course_id=course.id) }}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}{% endblock %}

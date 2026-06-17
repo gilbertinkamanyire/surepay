@@ -1,0 +1,154 @@
+{% extends 'base.html' %}
+{% block title %}Employee Progress Report{% endblock %}
+{% block body_class %}page-dashboard{% endblock %}
+
+{% block content %}
+<div class="page-header" style="flex-direction: row; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+    <div>
+        <h1>📊 Employee Training Progress</h1>
+        <p>Monitor course completion and learning adoption across all employees</p>
+    </div>
+    <a href="{{ url_for('admin_settings') }}" class="btn btn-outline btn-sm">⚙️ Platform Settings</a>
+</div>
+
+<!-- Summary Stats -->
+<div class="stats-grid mb-3" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
+    <div class="stat-card">
+        <div class="stat-icon"><i class='bx bxs-group'></i></div>
+        <div class="stat-value">{{ total_employees }}</div>
+        <div class="stat-label">Total Employees</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="color: #16a34a;"><i class='bx bxs-badge-check'></i></div>
+        <div class="stat-value">{{ completed_count }}</div>
+        <div class="stat-label">Earned Badges</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon"><i class='bx bxs-book-open'></i></div>
+        <div class="stat-value">{{ records|length }}</div>
+        <div class="stat-label">Active Enrollments</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="color: var(--accent);"><i class='bx bxs-bar-chart-alt-2'></i></div>
+        <div class="stat-value">
+            {% if records %}
+                {{ ((records | selectattr('progress', 'ge', 100) | list | length) / records|length * 100) | round(0) | int }}%
+            {% else %}0%{% endif %}
+        </div>
+        <div class="stat-label">Completion Rate</div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-3" style="padding: 1.25rem;">
+    <form method="GET" action="{{ url_for('admin_employee_progress') }}">
+        <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end;">
+            <div style="flex: 1; min-width: 200px;">
+                <label class="form-label" style="font-size: 0.8rem;">🔍 Search Employee</label>
+                <input type="text" name="search" class="form-input" placeholder="Name or email..." value="{{ search }}">
+            </div>
+            <div style="min-width: 160px;">
+                <label class="form-label" style="font-size: 0.8rem;">🏢 Business System</label>
+                <select name="dept" class="form-input">
+                    <option value="">All Systems</option>
+                    {% for dept in departments %}
+                        <option value="{{ dept.id }}" {% if dept_filter == dept.id %}selected{% endif %}>{{ dept.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <button type="submit" class="btn btn-primary">Filter</button>
+                {% if search or dept_filter %}
+                    <a href="{{ url_for('admin_employee_progress') }}" class="btn btn-outline" style="margin-left: 0.5rem;">Clear</a>
+                {% endif %}
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Progress Table -->
+{% if records %}
+<div class="table-wrapper">
+    <table>
+        <thead>
+            <tr>
+                <th>Employee</th>
+                <th>Business System</th>
+                <th>Course / Module</th>
+                <th style="width: 180px;">Progress</th>
+                <th>Status</th>
+                <th>Enrolled</th>
+                <th>Badge</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% set ns = namespace(last_user='') %}
+            {% for r in records %}
+            <tr {% if r.full_name != ns.last_user %}style="border-top: 2px solid var(--border);"{% endif %}>
+                {% if r.full_name != ns.last_user %}
+                <td rowspan="1" style="font-weight: 700;">
+                    <div style="display: flex; flex-direction: column;">
+                        <span>{{ r.full_name }}</span>
+                        <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 400;">{{ r.email }}</span>
+                    </div>
+                </td>
+                {% set ns.last_user = r.full_name %}
+                {% else %}
+                <td style="color: var(--text-muted); font-size: 0.8rem;">↳</td>
+                {% endif %}
+
+                <td>
+                    {% if r.system_name %}
+                        <span class="badge badge-info" style="font-size: 0.72rem;">{{ r.system_name }}</span>
+                    {% else %}
+                        <span style="color: var(--text-muted); font-size: 0.8rem;">—</span>
+                    {% endif %}
+                </td>
+                <td style="font-size: 0.85rem;">{{ r.course_title }}</td>
+                <td>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <div style="flex: 1; background: var(--bg-input); border-radius: 4px; height: 8px; overflow: hidden;">
+                            <div style="height: 100%; width: {{ r.progress|round(0)|int }}%;
+                                background: {% if r.progress >= 100 %}#16a34a{% elif r.progress >= 50 %}var(--accent){% else %}#f59e0b{% endif %};
+                                border-radius: 4px; transition: width 0.5s;"></div>
+                        </div>
+                        <span style="font-size: 0.75rem; font-weight: 700; min-width: 35px; text-align: right;">{{ r.progress|round(0)|int }}%</span>
+                    </div>
+                    <div style="font-size: 0.7rem; color: var(--text-muted);">{{ r.completed_lessons }}/{{ r.total_lessons }} lessons</div>
+                </td>
+                <td>
+                    {% if r.progress >= 100 %}
+                        <span class="badge badge-success">✅ Completed</span>
+                    {% elif r.progress > 0 %}
+                        <span class="badge badge-info">📘 In Progress</span>
+                    {% else %}
+                        <span class="badge" style="background: var(--bg-input); color: var(--text-muted);">⏳ Not Started</span>
+                    {% endif %}
+                </td>
+                <td style="font-size: 0.8rem; color: var(--text-muted);">{{ r.enrolled_at|timeago if r.enrolled_at else '—' }}</td>
+                <td>
+                    {% if r.badge_date %}
+                        <span title="Badge earned on {{ r.badge_date }}">🏅</span>
+                    {% else %}
+                        <span style="color: var(--text-muted); font-size: 0.8rem;">—</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="empty-state">
+    <div class="empty-state-icon">📊</div>
+    <div class="empty-state-title">No Enrollment Records</div>
+    <div class="empty-state-desc">
+        {% if search or dept_filter %}
+            No employees match your filter criteria.
+        {% else %}
+            No employees are enrolled in any courses yet.
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}

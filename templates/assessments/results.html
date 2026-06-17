@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% block title %}Assessment Results{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+    <a href="{{ url_for('course_detail', course_id=course.id) }}">{{ course.title }}</a>
+    <span class="breadcrumb-sep">›</span>
+    <span>{{ assessment.title }} - Results</span>
+</div>
+
+<div class="page-header">
+    <h1>📊 Assessment Results</h1>
+    <p>{{ assessment.title }}</p>
+</div>
+
+<!-- Score Summary -->
+<div class="card mb-2 text-center">
+    <div style="font-size: 3rem; font-weight: 900; color: {% if submission.score / submission.max_score >= 0.7 %}var(--success){% elif submission.score / submission.max_score >= 0.5 %}var(--warning){% else %}var(--danger){% endif %};">
+        {{ submission.score|int }}/{{ submission.max_score|int }}
+    </div>
+    <div style="font-size: 1.1rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
+        {{ (submission.score / submission.max_score * 100)|round(0)|int }}%
+    </div>
+    <div>
+        {% if submission.score / submission.max_score >= 0.7 %}
+            <span class="badge badge-success" style="font-size: 0.85rem; padding: 0.4rem 1rem;">🎉 Excellent!</span>
+        {% elif submission.score / submission.max_score >= 0.5 %}
+            <span class="badge badge-info" style="font-size: 0.85rem; padding: 0.4rem 1rem;">👍 Good effort!</span>
+        {% else %}
+            <span class="badge badge-danger" style="font-size: 0.85rem; padding: 0.4rem 1rem;">📚 Keep studying!</span>
+        {% endif %}
+    </div>
+    <div style="margin-top: 0.75rem; font-size: 0.8rem; color: var(--text-muted);">
+        Submitted {{ submission.submitted_at|timeago }}
+    </div>
+</div>
+
+<!-- Question Review -->
+<h2 class="section-title mb-2">📋 Review Answers</h2>
+
+{% for q in questions %}
+{% set answer = answers.get(loop.index0|string, -1) %}
+<div class="quiz-question">
+    <div class="quiz-question-num">Question {{ loop.index }}</div>
+    <div class="quiz-question-text">{{ q.question }}</div>
+    
+    {% for opt in q.options %}
+    <div class="quiz-option {% if loop.index0 == q.correct %}correct{% elif loop.index0 == answer and answer != q.correct %}wrong{% endif %}" 
+         style="cursor: default;">
+        <span style="width: 20px; text-align: center;">
+            {% if loop.index0 == q.correct %}✅
+            {% elif loop.index0 == answer and answer != q.correct %}❌
+            {% else %}○{% endif %}
+        </span>
+        <span>{{ opt }}</span>
+        {% if loop.index0 == q.correct %}
+            <span class="badge badge-success" style="margin-left: auto;">Correct</span>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+{% endfor %}
+
+<div class="text-center mt-2">
+    <a href="{{ url_for('course_detail', course_id=course.id) }}" class="btn btn-primary">← Back to Course</a>
+</div>
+{% endblock %}

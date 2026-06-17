@@ -1,0 +1,271 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block body_class %}page-dashboard{% endblock %}
+
+{% block content %}
+
+<!-- Blue & Green Welcome Note (Cirrus design) -->
+<section class="welcome-banner" style="position: relative; overflow: hidden;">
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1.5rem;">
+        <div style="flex: 1; min-width: 240px; position: relative; z-index: 1;">
+            <span class="welcome-eyebrow"><i class='bx bxs-zap'></i> {{ platform.company_name }} Workspace</span>
+            <h1>Welcome back, <span class="welcome-name">{{ current_user.full_name }}</span>! 👋</h1>
+            <p>
+                You're enrolled in <strong style="color:#d7ff7a;">{{ total_enrolled }}</strong>
+                course{{ '' if total_enrolled == 1 else 's' }} and have completed
+                <strong style="color:#d7ff7a;">{{ total_completed }}</strong> of them.
+                Keep learning &mdash; every lesson moves you forward.
+            </p>
+            <div class="welcome-actions">
+                <a href="{{ url_for('courses_list') }}" class="btn btn-on-blue"><i class='bx bxs-book-open'></i> Browse Courses</a>
+                <a href="{{ url_for('employee_grades') }}" class="btn btn-on-green"><i class='bx bxs-bar-chart-alt-2'></i> View My Grades</a>
+            </div>
+        </div>
+
+        <!-- Streak Badge (canvas design) -->
+        {% if streak > 0 %}
+        <div style="text-align: center; position: relative; z-index: 1; flex-shrink: 0;">
+            <div style="position: relative; display: inline-block;">
+                <img src="https://cdn.jsdelivr.net/npm/openmoji-named-svgs@latest/color/fire.svg"
+                     style="width: 100px; height: 100px; filter: drop-shadow(0 0 20px rgba(255,150,0,0.7));"
+                     alt="streak fire">
+                <div style="position: absolute; top: -8px; right: -8px; background: #a13d7a; color: white; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 0.85rem; border: 3px solid white; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+                    {{ streak }}
+                </div>
+            </div>
+            <div style="font-weight: 900; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 0.08em; margin-top: 0.4rem; color: white; text-shadow: 0 0 15px rgba(161,61,122,0.8);">
+                {{ streak }}-Day Streak
+            </div>
+            <div style="font-size: 0.75rem; font-weight: 700; letter-spacing: 0.12em; color: #d7ff7a; text-transform: uppercase;">
+                {% if streak >= 7 %}🌟 On Fire!{% elif streak >= 3 %}💪 Keep Going!{% else %}🔥 Streak Started!{% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+<!-- Stat overview (alternating blue / green accents) -->
+<div class="stats-grid">
+    <div class="stat-card dash-stat dash-stat--blue">
+        <div class="stat-icon">📚</div>
+        <div class="stat-value">{{ total_enrolled }}</div>
+        <div class="stat-label">Enrolled Courses</div>
+    </div>
+    <div class="stat-card dash-stat dash-stat--green">
+        <div class="stat-icon">✅</div>
+        <div class="stat-value">{{ total_completed }}</div>
+        <div class="stat-label">Completed</div>
+    </div>
+    <div class="stat-card dash-stat dash-stat--blue">
+        <div class="stat-icon">📝</div>
+        <div class="stat-value">{{ assessments|length }}</div>
+        <div class="stat-label">Pending Assessments</div>
+    </div>
+    <div class="stat-card dash-stat dash-stat--green">
+        <div class="stat-icon">🏅</div>
+        <div class="stat-value">{{ badges|length }}</div>
+        <div class="stat-label">Badges Earned</div>
+    </div>
+</div>
+
+<div class="layout-grid" style="display:grid; grid-template-columns: 2fr 1fr; gap:1.5rem; align-items:start;">
+    
+    <!-- Left Column: Courses -->
+    <div>
+        <h2 class="dash-section-title"><i class='bx bxs-graduation'></i> My Courses</h2>
+{% if enrollments %}
+<div class="course-grid">
+    {% for e in enrollments %}
+    <div class="course-card" style="padding: 1.5rem;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:0.5rem;">
+            <h3 style="font-size:1.1rem; margin-bottom:0.35rem;">{{ e.title }}</h3>
+            <span class="badge badge-success">{{ e.category or 'General' }}</span>
+        </div>
+        <p style="font-size:0.88rem; color:var(--text-muted); margin-bottom:1rem;">
+            {{ (e.description or '')[:90] }}{% if e.description and e.description|length > 90 %}…{% endif %}
+        </p>
+        <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:0.35rem;">
+            <span>Progress</span>
+            <strong>{{ e.progress or 0 }}%</strong>
+        </div>
+        <div class="progress-bar">
+            <div class="progress-fill" style="width: {{ e.progress or 0 }}%;"></div>
+        </div>
+        <div style="margin-top:1rem;">
+            <a href="{{ url_for('course_detail', course_id=e.course_id) }}" class="btn btn-primary btn-sm">Continue</a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="dash-empty">
+    <p>You haven't enrolled in any courses yet.</p>
+    <a href="{{ url_for('courses_list') }}" class="btn btn-primary mt-2">Find a Course</a>
+</div>
+{% endif %}
+    </div>
+
+    <!-- Right Column: Leaderboard (canvas pedestal design) -->
+    <div>
+        <h2 class="dash-section-title"><i class='bx bxs-trophy'></i> Top Learners</h2>
+        <div class="card" style="padding:1.25rem;">
+            {% if leaderboard %}
+                <!-- Top 3 Pedestal -->
+                {% set top3 = leaderboard[:3] %}
+                {% if top3|length >= 2 %}
+                <div style="display:flex; align-items:flex-end; justify-content:center; gap:0.75rem; margin-bottom:1.5rem;">
+                    <!-- 2nd place -->
+                    {% if top3|length >= 2 %}
+                    <div style="text-align:center;">
+                        <div style="position:relative; margin-bottom:0.5rem;">
+                            <img src="https://i.pravatar.cc/64?u={{ top3[1].full_name }}"
+                                 style="width:52px; height:52px; border-radius:50%; border:3px solid #c0c0c0; display:block; margin:0 auto;"
+                                 onerror="this.style.display='none'"
+                                 alt="{{ top3[1].full_name }}">
+                            <div style="position:absolute; bottom:-6px; left:50%; transform:translateX(-50%); background:#c0c0c0; color:white; width:18px; height:18px; border-radius:50%; font-weight:900; font-size:0.6rem; display:flex; align-items:center; justify-content:center;">2</div>
+                        </div>
+                        <div style="background:var(--bg-input); padding:0.5rem 0.75rem; border-radius:8px 8px 0 0; width:72px; height:64px; display:flex; flex-direction:column; justify-content:flex-end;">
+                            <strong style="font-size:1rem; color:var(--accent);">{{ top3[1].total_points }}</strong>
+                            <span style="font-size:0.6rem; color:var(--text-muted); font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:68px;">{{ top3[1].full_name.split()[0] }}</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                    <!-- 1st place (tallest) -->
+                    <div style="text-align:center;">
+                        <div style="position:relative; margin-bottom:0.5rem;">
+                            <img src="https://i.pravatar.cc/64?u={{ top3[0].full_name }}"
+                                 style="width:64px; height:64px; border-radius:50%; border:3px solid #95c01f; display:block; margin:0 auto; box-shadow:0 0 16px rgba(149,192,31,0.5);"
+                                 onerror="this.style.display='none'"
+                                 alt="{{ top3[0].full_name }}">
+                            <div style="position:absolute; bottom:-6px; left:50%; transform:translateX(-50%); background:#95c01f; color:white; width:22px; height:22px; border-radius:50%; font-weight:900; font-size:0.7rem; display:flex; align-items:center; justify-content:center; border:3px solid white;">1</div>
+                        </div>
+                        <div style="background:var(--accent); padding:0.5rem 0.75rem; border-radius:8px 8px 0 0; width:80px; height:96px; display:flex; flex-direction:column; justify-content:flex-end; box-shadow:0 8px 24px rgba(49,39,131,0.3);">
+                            <strong style="font-size:1.2rem; color:#95c01f;">{{ top3[0].total_points }}</strong>
+                            <span style="font-size:0.65rem; color:white; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:76px;">{{ top3[0].full_name.split()[0] }}</span>
+                        </div>
+                    </div>
+                    <!-- 3rd place -->
+                    {% if top3|length >= 3 %}
+                    <div style="text-align:center;">
+                        <div style="position:relative; margin-bottom:0.5rem;">
+                            <img src="https://i.pravatar.cc/64?u={{ top3[2].full_name }}"
+                                 style="width:48px; height:48px; border-radius:50%; border:3px solid #cd7f32; display:block; margin:0 auto;"
+                                 onerror="this.style.display='none'"
+                                 alt="{{ top3[2].full_name }}">
+                            <div style="position:absolute; bottom:-6px; left:50%; transform:translateX(-50%); background:#cd7f32; color:white; width:16px; height:16px; border-radius:50%; font-weight:900; font-size:0.55rem; display:flex; align-items:center; justify-content:center;">3</div>
+                        </div>
+                        <div style="background:#fff3e0; padding:0.5rem 0.75rem; border-radius:8px 8px 0 0; width:68px; height:48px; display:flex; flex-direction:column; justify-content:flex-end;">
+                            <strong style="font-size:0.95rem; color:var(--accent);">{{ top3[2].total_points }}</strong>
+                            <span style="font-size:0.6rem; color:var(--text-muted); font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:64px;">{{ top3[2].full_name.split()[0] }}</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+                <!-- Rest of leaderboard -->
+                {% for entry in leaderboard[3:] %}
+                <div style="display:flex; align-items:center; justify-content:space-between; padding:0.6rem 0; border-bottom:1px solid var(--border-light);">
+                    <div style="display:flex; align-items:center; gap:0.6rem;">
+                        <div style="width:24px; height:24px; background:var(--bg-input); color:var(--text-muted); border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:0.72rem; border:1px solid var(--border);">
+                            {{ loop.index + 3 }}
+                        </div>
+                        <strong style="font-size:0.88rem;">{{ entry.full_name }}</strong>
+                    </div>
+                    <div style="font-weight:900; color:var(--accent); font-size:0.95rem;">
+                        {{ entry.total_points }} <span style="font-size:0.65rem; color:var(--text-muted); font-weight:normal;">pts</span>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p style="color:var(--text-muted); margin:0;">No points earned yet.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="layout-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:1.5rem; align-items:start; margin-top: 1.5rem;">
+    <!-- Upcoming Assessments -->
+    <div>
+        <h2 class="dash-section-title"><i class='bx bxs-edit'></i> Upcoming Assessments</h2>
+        <div class="card" style="padding:1.25rem;">
+            {% if assessments %}
+                {% for a in assessments %}
+                <div style="padding:0.75rem 0; border-bottom:1px solid var(--border-light);">
+                    <strong>{{ a.title }}</strong>
+                    <div style="font-size:0.82rem; color:var(--text-muted);">{{ a.course_title }} · {{ a.created_at|timeago }}</div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p style="color:var(--text-muted); margin:0;">No pending assessments. Nice work! 🎉</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Announcements -->
+    <div>
+        <h2 class="dash-section-title"><i class='bx bxs-megaphone'></i> Announcements</h2>
+        <div class="card" style="padding:1.25rem;">
+            {% if announcements %}
+                {% for ann in announcements %}
+                <div style="padding:0.75rem 0; border-bottom:1px solid var(--border-light);">
+                    <strong>{{ ann.title }}</strong>
+                    <p style="font-size:0.85rem; color:var(--text-secondary); margin:0.25rem 0 0;">{{ (ann.content or '')[:120] }}{% if ann.content and ann.content|length > 120 %}…{% endif %}</p>
+                    <div style="font-size:0.78rem; color:var(--text-muted);">{{ ann.author_name }} · {{ ann.created_at|timeago }}</div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p style="color:var(--text-muted); margin:0;">No announcements right now.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% if badges %}
+<h2 class="dash-section-title"><i class='bx bxs-medal'></i> Earned Credentials</h2>
+<div style="display:flex; gap:1.25rem; overflow-x:auto; padding-bottom:0.75rem;">
+    {% for b in badges %}
+    {% set is_golden = b.badge_type == 'golden' %}
+    {% set is_silver = b.badge_type == 'silver' %}
+    {% set is_bronze = b.badge_type == 'bronze' %}
+    {% if is_golden %}
+        {% set cert_border = 'linear-gradient(135deg, #d4a843, #f5d778, #d4a843)' %}
+        {% set cert_bg = '#1a1a2e' %}
+        {% set cert_color = '#f5d778' %}
+        {% set cert_label = 'CLASS A — GOLD' %}
+        {% set cert_icon = 'bxs-badge-check' %}
+    {% elif is_silver %}
+        {% set cert_border = 'linear-gradient(135deg, #c0c0c0, #e0e0e0, #c0c0c0)' %}
+        {% set cert_bg = '#2a2a2a' %}
+        {% set cert_color = '#e0e0e0' %}
+        {% set cert_label = 'CLASS B — SILVER' %}
+        {% set cert_icon = 'bxs-award' %}
+    {% elif is_bronze %}
+        {% set cert_border = 'linear-gradient(135deg, #cd7f32, #e8a85c, #cd7f32)' %}
+        {% set cert_bg = '#3d2b1f' %}
+        {% set cert_color = '#e8a85c' %}
+        {% set cert_label = 'CLASS C — BRONZE' %}
+        {% set cert_icon = 'bxs-medal' %}
+    {% else %}
+        {% set cert_border = 'linear-gradient(135deg, #3b82f6, #60a5fa, #3b82f6)' %}
+        {% set cert_bg = '#0d1b2a' %}
+        {% set cert_color = '#93c5fd' %}
+        {% set cert_label = 'PARTICIPATION' %}
+        {% set cert_icon = 'bxs-certification' %}
+    {% endif %}
+    <div style="min-width:280px; background:{{ cert_border }}; padding:2px; border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,0.2); flex-shrink:0; transition:transform 0.3s;" onmouseover="this.style.transform='translateY(-6px)'" onmouseout="this.style.transform='translateY(0)'">
+        <div style="background:{{ cert_bg }}; border-radius:8px; padding:1.25rem 1.5rem; height:160px; display:flex; flex-direction:column; justify-content:space-between;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                <i class='bx {{ cert_icon }}' style="font-size:2.2rem; color:{{ cert_color }};"></i>
+                <span style="font-size:0.65rem; font-weight:900; letter-spacing:0.12em; color:{{ cert_color }}; text-transform:uppercase;">{{ cert_label }}</span>
+            </div>
+            <div>
+                <div style="font-weight:900; font-size:0.95rem; color:white; margin-bottom:0.25rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ b.course_title }}</div>
+                <div style="font-size:0.65rem; font-weight:700; letter-spacing:0.1em; color:{{ cert_color }}; text-transform:uppercase;">{{ b.badge_type|title }} Achievement</div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% endblock %}

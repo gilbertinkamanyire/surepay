@@ -1,0 +1,307 @@
+{% extends 'base.html' %}
+{% block title %}Welcome{% endblock %}
+{% block body_class %}page-home{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero glass bg-hero-img">
+    <div class="hero-badge"><i class='bx bxs-zap'></i> Corporate Training Platform</div>
+    <div class="mascot-container">
+        <!-- Full-Figure Cartoon Girl Mascot (SVG) -->
+        <div class="mascot-character full-figure" style="margin-left: -30px; margin-right: -40px;">
+            <svg viewBox="0 0 100 120" class="mascot-svg">
+                <!-- Hair (Behind) -->
+                <path d="M20,40 Q20,10 50,10 Q80,10 80,40" fill="#2d1b19" />
+                <!-- Skirt (Dress) -->
+                <path class="mascot-dress" d="M35,70 L65,70 L75,100 L25,100 Z" fill="#f97316" />
+                <!-- Torso -->
+                <rect x="42" cy="55" width="16" height="15" fill="#fef1e6" />
+                <!-- Face -->
+                <circle cx="50" cy="35" r="25" fill="#f8e1d4" />
+                <path d="M50,15 Q60,15 65,25" fill="none" stroke="#2d1b19" stroke-width="2" /> <!-- Hair Detail -->
+                <circle cx="43" cy="35" r="3" fill="#2d1b19" /> <!-- Eye L -->
+                <circle cx="57" cy="35" r="3" fill="#2d1b19" /> <!-- Eye R -->
+                <path d="M47,48 Q50,53 53,48" fill="none" stroke="#2d1b19" stroke-width="2" id="mascot-mouth" />
+                <!-- Arms -->
+                <rect class="mascot-arm arm-l" x="32" cy="55" width="8" height="20" rx="4" fill="#f8e1d4" transform="rotate(-15, 32, 55)" />
+                <rect class="mascot-arm arm-r" x="60" cy="55" width="8" height="20" rx="4" fill="#f8e1d4" transform="rotate(15, 60, 55)" />
+                <!-- Legs (Full Figure) -->
+                <g class="mascot-legs" fill="#f8e1d4">
+                    <rect x="35" cy="90" width="12" height="20" rx="6" transform="rotate(30, 35, 90)" /> 
+                    <rect x="53" cy="90" width="12" height="20" rx="6" transform="rotate(-30, 65, 90)" />
+                    <rect x="40" cy="105" width="8" height="15" rx="4" class="leg-l" />
+                    <rect x="52" cy="105" width="8" height="15" rx="4" class="leg-r" />
+                </g>
+            </svg>
+        </div>
+        <div class="speech-bubble word-art-bubble">
+            <h1 class="typing-text" data-text="Welcome to {{ platform.company_name }}">Welcome to {{ platform.company_name }}</h1>
+        </div>
+    </div>
+    <h1 style="margin-top: 1rem;">
+        Upskill Your Workforce<br>
+        <span class="gradient-text">Through Smarter Training</span>
+    </h1>
+
+    <p class="hero-desc">
+        A structured e-learning platform for mastering SIMS, CMS, PMS, and Core Banking systems.
+        Track your progress, earn badges, and grow your expertise.
+    </p>
+    <div class="hero-actions">
+        {% if current_user %}
+            <a href="{{ url_for('dashboard') }}" class="btn btn-lg btn-primary">🚀 Go to Dashboard</a>
+            <a href="{{ url_for('courses_list') }}" class="btn btn-lg btn-secondary">📖 Browse Training</a>
+        {% else %}
+            <a href="{{ url_for('login') }}" class="btn btn-lg btn-primary">🔐 Sign In</a>
+            <a href="{{ url_for('register') }}" class="btn btn-lg btn-secondary">Join Now</a>
+        {% endif %}
+    </div>
+</section>
+
+<!-- Business System Quick Select -->
+<section class="mt-4">
+    <div style="text-align: center; margin-bottom: 2rem;">
+        <h2 style="font-size: 1.8rem; font-weight: 900;">Select Your Business System</h2>
+        <p style="color: var(--text-secondary); max-width: 480px; margin: 0.5rem auto 0; font-weight: 500;">Choose the system you need to learn and access targeted training modules instantly.</p>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
+        {% for dept in nav_departments %}
+        <a href="{{ url_for('courses_list', dept=dept.id) }}" style="text-decoration: none;">
+            <div style="padding: 2rem 1.5rem; background: var(--bg-card); border-radius: var(--radius-xl); border: 1px solid var(--border); text-align: center; transition: all 0.35s cubic-bezier(0.175,0.885,0.32,1.275); box-shadow: var(--shadow-card);"
+                 onmouseover="this.style.transform='translateY(-8px)'; this.style.boxShadow='0 20px 40px rgba(249,115,22,0.15)'; this.style.borderColor='var(--accent)';"
+                 onmouseout="this.style.transform=''; this.style.boxShadow='var(--shadow-card)'; this.style.borderColor='var(--border)';">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">
+                    {% if dept.name == 'SIMS' %}🎓
+                    {% elif dept.name == 'CMS' %}📋
+                    {% elif dept.name == 'PMS' %}📊
+                    {% elif dept.name == 'Core Banking' %}🏦
+                    {% else %}💼{% endif %}
+                </div>
+                <div style="font-weight: 800; font-size: 1.15rem; color: var(--text-primary); margin-bottom: 0.5rem;">{{ dept.name }}</div>
+                <div style="font-size: 0.82rem; color: var(--text-secondary); line-height: 1.5;">{{ dept.description[:70] }}{% if dept.description|length > 70 %}...{% endif %}</div>
+                <div style="margin-top: 1rem; display: inline-block; padding: 0.35rem 1rem; background: var(--accent-surface); color: var(--accent); border-radius: 20px; font-size: 0.78rem; font-weight: 700;">Start Learning →</div>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+</section>
+
+<!-- Essential Features -->
+<section class="mt-4">
+    <div class="features-grid">
+        <div class="feature-card">
+            <div class="feature-icon"><i class='bx bxs-videos'></i></div>
+            <div class="feature-title">Video-First Training</div>
+            <div class="feature-desc">Watch step-by-step video tutorials for each business system, optimized for any connection speed.</div>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon"><i class='bx bxs-bar-chart-alt-2'></i></div>
+            <div class="feature-title">Progress Tracking</div>
+            <div class="feature-desc">Monitor your course completion in real-time with per-module progress dashboards.</div>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon"><i class='bx bxs-badge-check'></i></div>
+            <div class="feature-title">Achievement Badges</div>
+            <div class="feature-desc">Complete all modules in a system to earn a digital badge recognizing your expertise.</div>
+        </div>
+    </div>
+</section>
+
+<style>
+    /* Mascot & Typing Animation */
+    .mascot-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+        flex-wrap: nowrap;
+        flex-direction: row-reverse; /* Put girl in front for LTR reading? Or simply order */
+    }
+    .mascot-character.full-figure {
+        width: 140px;
+        height: 180px;
+        transform-origin: bottom center;
+        animation: mascot-kneel 3s infinite ease-in-out;
+        z-index: 5;
+    }
+    .mascot-svg {
+        width: 100%;
+        height: 100%;
+        overflow: visible;
+        filter: drop-shadow(0 15px 30px rgba(0,0,0,0.15));
+    }
+    .speech-bubble {
+        background: rgba(255, 255, 255, 0.9);
+        padding: 1.25rem 2.5rem;
+        border-radius: 30px 30px 0 30px;
+        box-shadow: 0 15px 40px rgba(0,0,0,0.1);
+        border: 2px solid var(--accent-light);
+        position: relative;
+        z-index: 4;
+        backdrop-filter: blur(10px);
+    }
+    .typing-text {
+        font-family: 'Outfit', sans-serif;
+        font-size: 2.8rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        background: var(--brand-secondary, #95c01f);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        overflow: hidden;
+        border-right: 4px solid var(--accent);
+        white-space: nowrap;
+        margin: 0 auto;
+        letter-spacing: -0.02em;
+        width: 0;
+        filter: drop-shadow(2px 2px 0px rgba(0,0,0,0.1));
+        animation: 
+            typing 3.5s steps(17, end) infinite,
+            blink-caret 0.75s step-end infinite;
+    }
+    
+    @keyframes mascot-kneel {
+        0%, 100% { transform: translateY(0) rotate(0deg) scale(1, 1); }
+        50% { transform: translateY(60px) rotate(-2deg) scale(1.15, 0.6); } /* Deeper kneeling */
+    }
+    .mascot-legs rect {
+        transition: transform 0.5s;
+    }
+    @keyframes typing {
+        0% { width: 0; }
+        70% { width: 100%; }
+        100% { width: 100%; }
+    }
+    @keyframes blink-caret {
+        from, to { border-color: transparent }
+        50% { border-color: var(--accent); }
+    }
+    #mascot-mouth {
+        animation: mascot-speak 0.5s infinite;
+    }
+    @keyframes mascot-speak {
+        0%, 100% { d: path("M47,48 Q50,53 53,48"); }
+        50% { d: path("M45,48 Q50,58 55,48"); }
+    }
+
+    .glass {
+        background: rgba(255, 255, 255, 0.05) !important; /* Extremely transparent for clear background */
+        backdrop-filter: blur(2px) saturate(120%);
+        -webkit-backdrop-filter: blur(2px);
+        border: 1px solid rgba(255, 255, 255, 0.15) !important;
+        box-shadow: none;
+    }
+    .hero h1, .hero p {
+        text-shadow: 0 4px 12px rgba(0,0,0,0.25); /* Added shadow for readability over clear background */
+    }
+    .mt-4 { margin-top: 4rem; }
+    .features-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 2rem;
+    }
+    .feature-card {
+        text-align: center;
+        padding: 3rem 2rem;
+        background: var(--bg-card);
+        border-radius: var(--radius-xl);
+        box-shadow: var(--shadow-card);
+        border: 1px solid var(--border);
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .feature-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 20px 40px rgba(249, 115, 22, 0.1);
+        border-color: var(--accent);
+    }
+    .feature-icon {
+        font-size: 3rem;
+        margin-bottom: 1.5rem;
+        display: inline-block;
+        padding: 1rem;
+        background: var(--accent-surface);
+        border-radius: var(--radius-lg);
+        color: var(--accent);
+    }
+    .feature-title { font-size: 1.35rem; font-weight: 800; margin-bottom: 1rem; color: var(--text-primary); }
+    .feature-desc { font-size: 1rem; color: var(--text-secondary); line-height: 1.6; }
+
+    .how-it-works { margin-top: 6rem; text-align: center; }
+    .step-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 3rem;
+        margin-top: 3rem;
+        position: relative;
+    }
+    .step-card { position: relative; z-index: 1; }
+    .step-num {
+        width: 50px; height: 50px; background: var(--accent); color: white;
+        border-radius: 50%; display: flex; align-items: center; justify-content: center;
+        font-weight: 900; font-size: 1.5rem; margin: 0 auto 1.5rem;
+        box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
+    }
+    .step-title { font-size: 1.2rem; font-weight: 800; margin-bottom: 0.75rem; }
+    
+    /* Visual pulse for some elements */
+    @keyframes pulse-soft {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+    }
+    .pulse { animation: pulse-soft 3s infinite ease-in-out; }
+</style>
+
+
+<!-- Visual Showcase: Employees Learning with Technology -->
+<section class="mt-4" style="text-align: center;">
+    <h2 style="font-size: 2rem; font-weight: 900; margin-bottom: 0.5rem;">Learn Anywhere, On Any Device</h2>
+    <p style="color: var(--text-secondary); max-width: 500px; margin: 0 auto 2rem; font-weight: 600;">Whether you're on a laptop, tablet, or smartphone — SurePay adapts to your device seamlessly.</p>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+        <div style="border-radius: var(--radius-xl); overflow: hidden; border: 1px solid var(--border); box-shadow: var(--shadow-card);">
+            <img src="/static/images/backgrounds/bg3.jpeg" alt="African employees in a classroom with technology" style="width: 100%; height: 220px; object-fit: cover; border-radius: 0; display: block;">
+            <div style="padding: 1.25rem; background: var(--bg-card);">
+                <h4 style="font-weight: 800; margin-bottom: 0.3rem;">Collaborative Learning</h4>
+                <p style="font-size: 0.9rem; color: var(--text-muted); margin: 0;">African employees working together on coursework and projects.</p>
+            </div>
+        </div>
+        <div style="border-radius: var(--radius-xl); overflow: hidden; border: 1px solid var(--border); box-shadow: var(--shadow-card);">
+            <img src="/static/images/backgrounds/bg1.jpeg" alt="African woman using laptop for online learning" style="width: 100%; height: 220px; object-fit: cover; border-radius: 0; display: block;">
+            <div style="padding: 1.25rem; background: var(--bg-card);">
+                <h4 style="font-weight: 800; margin-bottom: 0.3rem;">Digital Classroom</h4>
+                <p style="font-size: 0.9rem; color: var(--text-muted); margin: 0;">Access interactive lessons from any smart device, anywhere in Uganda.</p>
+            </div>
+        </div>
+        <div style="border-radius: var(--radius-xl); overflow: hidden; border: 1px solid var(--border); box-shadow: var(--shadow-card);">
+            <img src="/static/images/backgrounds/bg2.jpeg" alt="Young African employee using smartphone for learning" style="width: 100%; height: 220px; object-fit: cover; border-radius: 0; display: block;">
+            <div style="padding: 1.25rem; background: var(--bg-card);">
+                <h4 style="font-weight: 800; margin-bottom: 0.3rem;">Learn On-The-Go</h4>
+                <p style="font-size: 0.9rem; color: var(--text-muted); margin: 0;">Study at your own pace on mobile — optimized for low data.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Visual Stats Section -->
+<section class="mt-4" style="padding: 4rem 1.25rem; background: var(--bg-card); border-radius: var(--radius-xl); border: 1px solid var(--border);">
+    <div class="stats-grid" style="margin-bottom: 0;">
+        <div class="stat-card" style="box-shadow: none; background: transparent;">
+            <div class="stat-icon"><i class='bx bxs-user-voice'></i></div>
+            <div class="stat-value">1K+</div>
+            <div class="stat-label">Active Learners</div>
+        </div>
+        <div class="stat-card" style="box-shadow: none; background: transparent;">
+            <div class="stat-icon"><i class='bx bxs-book-content'></i></div>
+            <div class="stat-value">50+</div>
+            <div class="stat-label">Offline-Optimized Courses</div>
+        </div>
+        <div class="stat-card" style="box-shadow: none; background: transparent;">
+            <div class="stat-icon"><i class='bx bxs-network-chart'></i></div>
+            <div class="stat-value">99%</div>
+            <div class="stat-label">Accessibility Rate</div>
+        </div>
+    </div>
+</section>
+{% endblock %}

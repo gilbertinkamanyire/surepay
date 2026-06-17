@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% block title %}Account Settings{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12 col-md-4">
+        <div class="card p-3 mb-3">
+            <h3 class="mb-2">Settings Menu</h3>
+            <ul class="nav-list" style="list-style: none; padding: 0;">
+                <li style="margin-bottom: 0.5rem;">
+                    <a href="{{ url_for('profile') }}" style="text-decoration: none; color: var(--text);">👤 Profile Information</a>
+                </li>
+                <li style="margin-bottom: 0.5rem;">
+                    <a href="{{ url_for('settings') }}" style="text-decoration: none; color: var(--primary); font-weight: bold;">⚙️ Preferences</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="col-12 col-md-8">
+        <div class="card p-3">
+            <div class="section-header">
+                <h1 class="section-title">Preferences</h1>
+            </div>
+            
+            <form method="POST" action="{{ url_for('settings') }}">
+                <h3 class="mt-2 mb-2">Notifications</h3>
+                
+                <div class="form-group" style="display: flex; align-items: center;">
+                    <input type="checkbox" id="notify_email_announcements" name="notify_email_announcements" checked style="margin-right: 10px;">
+                    <label for="notify_email_announcements" style="margin-bottom: 0;">Email me about new announcements</label>
+                </div>
+                
+                <div class="form-group" style="display: flex; align-items: center;">
+                    <input type="checkbox" id="notify_sms" name="notify_sms" style="margin-right: 10px;">
+                    <label for="notify_sms" style="margin-bottom: 0;">SMS Alerts for Assessments Updates</label>
+                </div>
+                
+                <h3 class="mt-4 mb-2">Account Handling</h3>
+                <p style="font-size: 0.9rem; color: var(--text-secondary);">
+                    Need to remove your account entirely from SurePay? Please contact your administrator.
+                </p>
+                
+                <button type="submit" class="btn btn-primary mt-3">Save Preferences</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

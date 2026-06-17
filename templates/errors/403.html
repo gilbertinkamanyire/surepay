@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block title %}Access Denied{% endblock %}
+
+{% block content %}
+<div class="empty-state" style="padding: 5rem 1rem;">
+    <div class="empty-state-icon">🚫</div>
+    <h1 style="font-size: 4rem; font-weight: 900; color: var(--danger); margin-bottom: 0.5rem;">403</h1>
+    <div class="empty-state-title">Access Denied</div>
+    <div class="empty-state-desc">You don't have permission to access this page.</div>
+    <div class="btn-group" style="justify-content: center;">
+        <a href="{{ url_for('dashboard') }}" class="btn btn-primary">📊 Dashboard</a>
+        <a href="{{ request.referrer or url_for('index') }}" class="btn btn-secondary">← Go Back</a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,251 @@
+{% extends 'base.html' %}
+{% block title %}Platform Settings{% endblock %}
+{% block body_class %}page-dashboard{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>🎨 Platform Branding & Settings</h1>
+        <p>Configure your company logo, name, and brand colours</p>
+    </div>
+</div>
+
+<div class="layout-grid" style="grid-template-columns: 1fr 1fr; gap: 2rem; align-items: start;">
+
+    <!-- Branding Form -->
+    <div>
+        <form method="POST" action="{{ url_for('admin_settings') }}" enctype="multipart/form-data">
+            <!-- Company Identity -->
+            <div class="card mb-3" style="padding: 1.5rem;">
+                <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <i class='bx bxs-building-house'></i> Company Identity
+                </h3>
+
+                <div class="form-group mb-2">
+                    <label class="form-label" for="company_name">Company / Platform Name</label>
+                    <input type="text" id="company_name" name="company_name" class="form-input"
+                           value="{{ current_settings.get('company_name', 'SurePay') }}"
+                           placeholder="e.g. Stanbic Bank Learning Hub" required>
+                </div>
+
+                <div class="form-group mb-2">
+                    <label class="form-label" for="logo_file">Company Logo</label>
+                    {% if current_settings.get('logo_url') %}
+                    <div style="margin-bottom: 0.75rem; padding: 0.75rem; background: var(--bg-input); border-radius: var(--radius); border: 1px solid var(--border);">
+                        <img src="{{ current_settings.logo_url }}" alt="Current Logo" style="max-height: 60px; object-fit: contain;">
+                        <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem;">Current logo — upload a new one to replace it</div>
+                    </div>
+                    {% endif %}
+                    <input type="file" id="logo_file" name="logo_file" class="form-input" accept="image/*">
+                    <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 0.3rem;">PNG or SVG recommended. Ideal size: 200×60px.</div>
+                </div>
+            </div>
+
+            <!-- Brand Colours -->
+            <div class="card mb-3" style="padding: 1.5rem;">
+                <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <i class='bx bxs-palette'></i> Brand Colours
+                </h3>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
+                        <label class="form-label" for="primary_color">Primary / Accent Colour</label>
+                        <div style="display: flex; align-items: center; gap: 0.75rem;">
+                            <input type="color" id="primary_color" name="primary_color"
+                                   value="{{ current_settings.get('primary_color', '#312783') }}"
+                                   style="width: 50px; height: 40px; border: none; background: none; cursor: pointer; border-radius: var(--radius);">
+                            <input type="text" id="primary_color_text" class="form-input"
+                                   value="{{ current_settings.get('primary_color', '#312783') }}"
+                                   placeholder="#312783" style="flex: 1;"
+                                   oninput="document.getElementById('primary_color').value=this.value">
+                        </div>
+                        <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 0.3rem;">Used for buttons, progress bars, links</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="secondary_color">Secondary / Dark Colour</label>
+                        <div style="display: flex; align-items: center; gap: 0.75rem;">
+                            <input type="color" id="secondary_color" name="secondary_color"
+                                   value="{{ current_settings.get('secondary_color', '#95c01f') }}"
+                                   style="width: 50px; height: 40px; border: none; background: none; cursor: pointer; border-radius: var(--radius);">
+                            <input type="text" id="secondary_color_text" class="form-input"
+                                   value="{{ current_settings.get('secondary_color', '#95c01f') }}"
+                                   placeholder="#95c01f" style="flex: 1;"
+                                   oninput="document.getElementById('secondary_color').value=this.value">
+                        </div>
+                        <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 0.3rem;">Used for navbar, dark UI elements</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Legal / Terms & Conditions -->
+            <div class="card mb-3" style="padding: 1.5rem;">
+                <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <i class='bx bxs-file'></i> Terms &amp; Conditions
+                </h3>
+                <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 1rem;">
+                    Shown to every user on their first login. Current version:
+                    <strong>{{ current_settings.get('terms_version', '1') }}</strong>.
+                    Saving changes here bumps the version and asks all users to re-accept.
+                </p>
+                <div class="form-group">
+                    <label class="form-label" for="terms_content">Terms text</label>
+                    <textarea id="terms_content" name="terms_content" class="form-input" rows="10"
+                              placeholder="Enter the platform terms &amp; conditions...">{{ current_settings.get('terms_content', '') }}</textarea>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-lg" style="width: 100%;">
+                <i class='bx bxs-save'></i> Save Settings
+            </button>
+        </form>
+    </div>
+
+    <!-- Live Preview -->
+    <div>
+        <div class="card" style="padding: 1.5rem; position: sticky; top: 2rem;">
+            <h3 style="font-size: 1rem; font-weight: 700; margin-bottom: 1rem;">👁 Live Preview</h3>
+            <div id="preview-box" style="border: 2px solid var(--border); border-radius: var(--radius-lg); overflow: hidden;">
+                <!-- Fake Navbar -->
+                <div id="preview-navbar" style="background: #0f172a; padding: 0.75rem 1.25rem; display: flex; align-items: center; gap: 0.75rem;">
+                    <div id="preview-logo-area" style="display: flex; align-items: center; gap: 0.5rem;">
+                        <div id="preview-logo-icon" style="width: 36px; height: 36px; border-radius: 6px; background: #f97316; display: flex; align-items: center; justify-content: center; font-size: 1rem; overflow: hidden;">
+                            {% if current_settings.get('logo_url') %}
+                                <img id="preview-logo-img" src="{{ current_settings.logo_url }}" alt="logo" style="height:100%; width:auto; object-fit:contain; display:block;" />
+                            {% else %}
+                                <span id="preview-logo-text">🎓</span>
+                            {% endif %}
+                        </div>
+                        <span id="preview-name" style="color: white; font-weight: 800; font-size: 1rem;">{{ current_settings.get('company_name', 'SurePay') }}</span>
+                    </div>
+                </div>
+                <!-- Fake Content -->
+                <div style="padding: 1.25rem; background: var(--bg-main);">
+                    <div style="font-weight: 700; font-size: 1rem; margin-bottom: 0.75rem;">SIMS Training Module</div>
+                    <div style="background: var(--bg-input); border-radius: 6px; height: 8px; margin-bottom: 0.5rem; overflow: hidden;">
+                        <div id="preview-progress" style="height: 100%; width: 65%; background: #f97316; border-radius: 6px; transition: background 0.3s;"></div>
+                    </div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">65% Complete</div>
+                    <button id="preview-btn" style="background: #f97316; color: white; border: none; padding: 0.5rem 1.25rem; border-radius: 6px; font-weight: 700; cursor: default; transition: background 0.3s;">
+                        Continue Learning
+                    </button>
+                </div>
+                <!-- Badge Preview -->
+                <div style="padding: 1rem 1.25rem; background: var(--bg-card); border-top: 1px solid var(--border); display: flex; align-items: center; gap: 0.75rem;">
+                    <div id="preview-badge" style="width: 40px; height: 40px; border-radius: 50%; background: #f97316; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">🏅</div>
+                    <div>
+                        <div style="font-weight: 700; font-size: 0.85rem;">Core Banking — Completed!</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">Badge awarded today</div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 1.5rem; padding: 1rem; background: var(--bg-input); border-radius: var(--radius); border: 1px solid var(--border);">
+                <div style="font-size: 0.8rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--text-muted);">QUICK PRESETS</div>
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                    <button type="button" class="btn btn-sm btn-outline" onclick="applyPreset('#f97316','#0f172a','SurePay')">🟠 Default</button>
+                    <button type="button" class="btn btn-sm btn-outline" onclick="applyPreset('#1e40af','#1e293b','Stanbic Learning')">🔵 Corporate</button>
+                    <button type="button" class="btn btn-sm btn-outline" onclick="applyPreset('#16a34a','#14532d','Green Finance')">🟢 Finance</button>
+                    <button type="button" class="btn btn-sm btn-outline" onclick="applyPreset('#7c3aed','#1e1b4b','Tech Hub')">🟣 Tech</button>
+                </div>
+            </div>
+            <div style="margin-top:0.75rem; font-size:0.85rem; color:var(--text-muted);">Designed by <strong>Tinka</strong></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Sync colour pickers with text inputs
+    document.getElementById('primary_color').addEventListener('input', function() {
+        document.getElementById('primary_color_text').value = this.value;
+        updatePreview();
+    });
+    document.getElementById('primary_color_text').addEventListener('input', function() {
+        if (/^#[0-9A-Fa-f]{6}$/.test(this.value)) {
+            document.getElementById('primary_color').value = this.value;
+            updatePreview();
+        }
+    });
+    document.getElementById('secondary_color').addEventListener('input', function() {
+        document.getElementById('secondary_color_text').value = this.value;
+        updatePreview();
+    });
+    document.getElementById('secondary_color_text').addEventListener('input', function() {
+        if (/^#[0-9A-Fa-f]{6}$/.test(this.value)) {
+            document.getElementById('secondary_color').value = this.value;
+            updatePreview();
+        }
+    });
+    document.getElementById('company_name').addEventListener('input', function() {
+        document.getElementById('preview-name').textContent = this.value || 'SurePay';
+    });
+
+    function updatePreview() {
+        const primary = document.getElementById('primary_color').value;
+        const secondary = document.getElementById('secondary_color').value;
+        document.getElementById('preview-navbar').style.background = secondary;
+        document.getElementById('preview-progress').style.background = primary;
+        document.getElementById('preview-btn').style.background = primary;
+        document.getElementById('preview-logo-icon').style.background = primary;
+        document.getElementById('preview-badge').style.background = primary;
+    }
+
+    function applyPreset(primary, secondary, name) {
+        document.getElementById('primary_color').value = primary;
+        document.getElementById('primary_color_text').value = primary;
+        document.getElementById('secondary_color').value = secondary;
+        document.getElementById('secondary_color_text').value = secondary;
+        document.getElementById('company_name').value = name;
+        document.getElementById('preview-name').textContent = name;
+        updatePreview();
+    }
+
+    // Live preview for selected logo file (shows immediately before upload)
+    const serverLogo = "{{ current_settings.get('logo_url', '') }}";
+    const logoInput = document.getElementById('logo_file');
+    if (logoInput) {
+        logoInput.addEventListener('change', function(e) {
+            const file = this.files && this.files[0];
+            const logoIcon = document.getElementById('preview-logo-icon');
+            if (!logoIcon) return;
+
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(ev) {
+                    let img = document.getElementById('preview-logo-img');
+                    // remove text placeholder if present
+                    const text = document.getElementById('preview-logo-text');
+                    if (text) text.remove();
+                    if (!img) {
+                        img = document.createElement('img');
+                        img.id = 'preview-logo-img';
+                        img.style.height = '100%';
+                        img.style.width = 'auto';
+                        img.style.objectFit = 'contain';
+                        img.style.display = 'block';
+                        logoIcon.innerHTML = '';
+                        logoIcon.appendChild(img);
+                    }
+                    img.src = ev.target.result;
+                };
+                reader.readAsDataURL(file);
+            } else {
+                // no file selected: restore server logo or placeholder
+                const existing = document.getElementById('preview-logo-img');
+                if (existing) existing.remove();
+                logoIcon.innerHTML = '';
+                if (serverLogo) {
+                    const img = document.createElement('img');
+                    img.id = 'preview-logo-img';
+                    img.style.height = '100%'; img.style.width = 'auto'; img.style.objectFit = 'contain'; img.style.display = 'block';
+                    img.src = serverLogo;
+                    logoIcon.appendChild(img);
+                } else {
+                    const span = document.createElement('span'); span.id = 'preview-logo-text'; span.textContent = '🎓';
+                    logoIcon.appendChild(span);
+                }
+            }
+        });
+    }
+</script>
+{% endblock %}

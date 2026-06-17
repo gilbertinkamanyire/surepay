@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block title %}Discussions - {{ course.title }}{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+    <a href="{{ url_for('course_detail', course_id=course.id) }}">{{ course.title }}</a>
+    <span class="breadcrumb-sep">›</span>
+    <span>Discussions</span>
+</div>
+
+<div class="page-header">
+    <div class="flex-between" style="flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <h1>💬 Discussions</h1>
+            <p>{{ course.title }}</p>
+        </div>
+        <a href="{{ url_for('create_discussion', course_id=course.id) }}" class="btn btn-primary">+ New Discussion</a>
+    </div>
+</div>
+
+{% if discussions %}
+    {% for d in discussions %}
+    <a href="{{ url_for('view_discussion', course_id=course.id, discussion_id=d.id) }}" style="text-decoration: none;">
+        <div class="discussion-item">
+            <div class="flex-between">
+                <div>
+                    <div class="discussion-title">{{ d.title }}</div>
+                    <div class="discussion-meta">
+                        {{ d.author_name }} · {{ d.reply_count }} replies · {{ d.created_at|timeago }}
+                    </div>
+                </div>
+                <span class="badge badge-info">{{ d.reply_count }} 💬</span>
+            </div>
+        </div>
+    </a>
+    {% endfor %}
+{% else %}
+    <div class="empty-state">
+        <div class="empty-state-icon">💬</div>
+        <div class="empty-state-title">No Discussions Yet</div>
+        <div class="empty-state-desc">Be the first to start a discussion!</div>
+        <a href="{{ url_for('create_discussion', course_id=course.id) }}" class="btn btn-primary">Start Discussion</a>
+    </div>
+{% endif %}
+{% endblock %}

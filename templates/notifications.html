@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block title %}Notifications{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>🔔 Notifications</h1>
+    <p>Stay updated with the latest activity in your courses.</p>
+</div>
+
+<div class="card" style="max-width: 800px; margin: 0 auto;">
+    {% for n in notifications %}
+    <div class="notification-item {% if not n.is_read %}unread{% endif %}" 
+         style="padding: 1.25rem; border-bottom: 1px solid var(--border); transition: background 0.2s;">
+        <div class="flex-between">
+            <h3 style="font-size: 1.1rem; margin-bottom: 0.25rem;">{{ n.title }}</h3>
+            <span style="font-size: 0.8rem; color: var(--text-muted);">{{ n.created_at }}</span>
+        </div>
+        <p style="color: var(--text-dim); margin-bottom: 0.75rem;">{{ n.message }}</p>
+        {% if n.link %}
+        <a href="{{ n.link }}" class="btn btn-sm btn-outline">View Details</a>
+        {% endif %}
+    </div>
+    {% endfor %}
+    
+    {% if not notifications %}
+    <div style="padding: 3rem; text-align: center; color: var(--text-muted);">
+        <div style="font-size: 3rem; margin-bottom: 1rem;">📭</div>
+        <p>No notifications yet.</p>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    .notification-item.unread {
+        background: rgba(var(--accent-rgb), 0.05);
+        border-left: 4px solid var(--accent);
+    }
+    .notification-item:hover {
+        background: var(--bg-card-hover);
+    }
+    .notification-item:last-child {
+        border-bottom: none;
+    }
+</style>
+{% endblock %}

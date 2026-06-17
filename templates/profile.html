@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+{% block title %}My Profile{% endblock %}
+{% block body_class %}page-profile{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>👤 My Profile</h1>
+</div>
+
+<!-- Profile Header -->
+<div class="profile-header">
+    <div class="profile-avatar overflow-hidden">
+        {% if user.profile_pic_url %}
+            <img src="{{ user.profile_pic_url }}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover;">
+        {% else %}
+            {{ user.full_name[0] }}
+        {% endif %}
+    </div>
+    <div class="profile-info">
+        <h2>{{ user.full_name }}</h2>
+        <div class="profile-role text-accent">{{ user.role|title }}</div>
+        <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">
+            {{ user.email }} {% if user.phone %}· {{ user.phone }}{% endif %}
+        </div>
+        <div style="font-size: 0.75rem; color: var(--text-muted);">
+            Member since {{ user.created_at|timeago }}
+        </div>
+    </div>
+</div>
+
+<!-- Stats -->
+{% if stats %}
+<div class="stats-grid mb-3">
+    {% for key, value in stats.items() %}
+    <div class="stat-card">
+        <div class="stat-value">{{ value }}</div>
+        <div class="stat-label">{{ key|replace('_', ' ')|title }}</div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="layout-grid layout-grid-2">
+    <!-- Edit Profile -->
+    <div class="card">
+        <div class="card-header">
+            <h3>✏️ Edit Profile</h3>
+        </div>
+        <form method="POST" action="{{ url_for('profile') }}" enctype="multipart/form-data">
+            <div class="form-group">
+                <label class="form-label" for="profile_pic">Profile Picture</label>
+                <input type="file" id="profile_pic" name="profile_pic" class="form-input" accept="image/*">
+                {% if user.profile_pic_url %}
+                <div class="form-hint">Current picture exists. Upload new to replace.</div>
+                {% endif %}
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="full_name">Full Name</label>
+                <input type="text" id="full_name" name="full_name" class="form-input" value="{{ user.full_name }}" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="email">Email</label>
+                <input type="email" id="email" name="email" class="form-input" value="{{ user.email }}" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="phone">Phone</label>
+                <input type="tel" id="phone" name="phone" class="form-input" value="{{ user.phone or '' }}" placeholder="+256...">
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="bio">Bio</label>
+                <textarea id="bio" name="bio" class="form-textarea" rows="3" placeholder="Tell us about yourself...">{{ user.bio or '' }}</textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+        </form>
+    </div>
+    
+    <!-- Change Password -->
+    <div class="card">
+        <div class="card-header">
+            <h3>🔒 Change Password</h3>
+        </div>
+        <form method="POST" action="{{ url_for('change_password') }}">
+            <div class="form-group">
+                <label class="form-label" for="current_password">Current Password</label>
+                <input type="password" id="current_password" name="current_password" class="form-input" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="new_password">New Password</label>
+                <input type="password" id="new_password" name="new_password" class="form-input" required>
+                <div class="form-hint">Minimum 6 characters</div>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="confirm_password">Confirm New Password</label>
+                <input type="password" id="confirm_password" name="confirm_password" class="form-input" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Change Password</button>
+        </form>
+    </div>
+</div>
+
+<!-- Danger Zone -->
+<div class="card mt-2" style="border-color: #fee2e2; background: #fffafb;">
+    <div class="card-header" style="border-bottom-color: #fecaca;">
+        <h3 style="color: #ef4444;">⚠️ Danger Zone</h3>
+    </div>
+    <div class="flex-between" style="flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <p style="margin-bottom: 0.25rem; font-weight: 700; color: #b91c1c;">Delete Account</p>
+            <p style="font-size: 0.85rem; color: #7f1d1d; max-width: 500px;">
+                Once you delete your account, there is no going back. All your enrollments, progress, and submissions will be permanently removed.
+            </p>
+        </div>
+        <form action="{{ url_for('delete_account') }}" method="POST" onsubmit="return confirm('ARE YOU ABSOLUTELY SURE? This action is permanent and cannot be undone. All your data will be LOST.');">
+            <button type="submit" class="btn btn-danger">Permanently Delete Account</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

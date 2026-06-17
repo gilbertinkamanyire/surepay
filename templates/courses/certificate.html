@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Certificate - {{ course.title }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #2c2c2c;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .certificate-container {
+            width: 1100px;
+            height: 780px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* ========== CLASS A - GOLDEN ========== */
+        .cert-class-a .cert-bg {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 40%, #0f3460 100%);
+            border: 6px solid #d4a843;
+        }
+        .cert-class-a .cert-bg::before {
+            border-color: #d4a843;
+        }
+        .cert-class-a .cert-ribbon { background: linear-gradient(90deg, #d4a843, #f5d778, #d4a843); color: #1a1a2e; }
+        .cert-class-a .cert-title { color: #f5d778; }
+        .cert-class-a .cert-class-label { color: #f5d778; border-color: #d4a843; }
+        .cert-class-a .cert-name { color: #ffffff; border-color: #d4a843; }
+        .cert-class-a .cert-detail { color: #c9c9c9; }
+        .cert-class-a .cert-seal { background: linear-gradient(135deg, #d4a843, #f5d778); color: #1a1a2e; }
+        .cert-class-a .corner-ornament { border-color: #d4a843; }
+
+        /* ========== CLASS B - SILVER ========== */
+        .cert-class-b .cert-bg {
+            background: linear-gradient(135deg, #1b1b2f 0%, #2d2d44 40%, #44475a 100%);
+            border: 6px solid #c0c0c0;
+        }
+        .cert-class-b .cert-bg::before {
+            border-color: #c0c0c0;
+        }
+        .cert-class-b .cert-ribbon { background: linear-gradient(90deg, #a0a0a0, #e0e0e0, #a0a0a0); color: #1b1b2f; }
+        .cert-class-b .cert-title { color: #e0e0e0; }
+        .cert-class-b .cert-class-label { color: #e0e0e0; border-color: #c0c0c0; }
+        .cert-class-b .cert-name { color: #ffffff; border-color: #c0c0c0; }
+        .cert-class-b .cert-detail { color: #b0b0b0; }
+        .cert-class-b .cert-seal { background: linear-gradient(135deg, #a0a0a0, #e0e0e0); color: #1b1b2f; }
+        .cert-class-b .corner-ornament { border-color: #c0c0c0; }
+
+        /* ========== CLASS C - BRONZE ========== */
+        .cert-class-c .cert-bg {
+            background: linear-gradient(135deg, #2c1a0e 0%, #3d2b1f 40%, #5c3d2e 100%);
+            border: 6px solid #cd7f32;
+        }
+        .cert-class-c .cert-bg::before {
+            border-color: #cd7f32;
+        }
+        .cert-class-c .cert-ribbon { background: linear-gradient(90deg, #cd7f32, #e8a85c, #cd7f32); color: #2c1a0e; }
+        .cert-class-c .cert-title { color: #e8a85c; }
+        .cert-class-c .cert-class-label { color: #e8a85c; border-color: #cd7f32; }
+        .cert-class-c .cert-name { color: #ffffff; border-color: #cd7f32; }
+        .cert-class-c .cert-detail { color: #c0a080; }
+        .cert-class-c .cert-seal { background: linear-gradient(135deg, #cd7f32, #e8a85c); color: #2c1a0e; }
+        .cert-class-c .corner-ornament { border-color: #cd7f32; }
+
+        /* ========== PARTICIPATION ========== */
+        .cert-class-participation .cert-bg {
+            background: linear-gradient(135deg, #0d1b2a 0%, #1b2838 40%, #1e3a5f 100%);
+            border: 6px solid #3b82f6;
+        }
+        .cert-class-participation .cert-bg::before {
+            border-color: #3b82f6;
+        }
+        .cert-class-participation .cert-ribbon { background: linear-gradient(90deg, #3b82f6, #60a5fa, #3b82f6); color: #ffffff; }
+        .cert-class-participation .cert-title { color: #93c5fd; }
+        .cert-class-participation .cert-class-label { color: #93c5fd; border-color: #3b82f6; }
+        .cert-class-participation .cert-name { color: #ffffff; border-color: #3b82f6; }
+        .cert-class-participation .cert-detail { color: #94a3b8; }
+        .cert-class-participation .cert-seal { background: linear-gradient(135deg, #3b82f6, #60a5fa); color: #ffffff; }
+        .cert-class-participation .corner-ornament { border-color: #3b82f6; }
+
+        /* ========== SHARED STYLES ========== */
+        .cert-bg {
+            width: 100%;
+            height: 100%;
+            border-radius: 12px;
+            padding: 50px 60px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+        .cert-bg::before {
+            content: '';
+            position: absolute;
+            top: 15px; left: 15px; right: 15px; bottom: 15px;
+            border: 2px solid;
+            border-radius: 8px;
+            pointer-events: none;
+        }
+
+        /* Corner ornaments */
+        .corner-ornament {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            border-width: 3px;
+            border-style: solid;
+        }
+        .corner-tl { top: 25px; left: 25px; border-right: none; border-bottom: none; border-radius: 8px 0 0 0; }
+        .corner-tr { top: 25px; right: 25px; border-left: none; border-bottom: none; border-radius: 0 8px 0 0; }
+        .corner-bl { bottom: 25px; left: 25px; border-right: none; border-top: none; border-radius: 0 0 0 8px; }
+        .corner-br { bottom: 25px; right: 25px; border-left: none; border-top: none; border-radius: 0 0 8px 0; }
+
+        .cert-ribbon {
+            padding: 8px 40px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            margin-bottom: 25px;
+        }
+
+        .cert-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.8rem;
+            font-weight: 900;
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+        }
+        .cert-subtitle {
+            font-size: 0.85rem;
+            color: #888;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 30px;
+        }
+        .cert-class-label {
+            font-size: 1.1rem;
+            font-weight: 700;
+            letter-spacing: 6px;
+            text-transform: uppercase;
+            border: 2px solid;
+            padding: 6px 30px;
+            border-radius: 6px;
+            margin-bottom: 25px;
+        }
+        .cert-awarded {
+            font-size: 0.85rem;
+            color: #999;
+            margin-bottom: 8px;
+        }
+        .cert-name {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.2rem;
+            font-weight: 700;
+            padding-bottom: 8px;
+            border-bottom: 2px solid;
+            margin-bottom: 18px;
+        }
+        .cert-detail {
+            font-size: 0.9rem;
+            line-height: 1.7;
+            max-width: 600px;
+        }
+        .cert-detail strong {
+            color: #fff;
+        }
+        .cert-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            width: 100%;
+            margin-top: 35px;
+            padding: 0 20px;
+        }
+        .cert-footer-item {
+            text-align: center;
+        }
+        .cert-footer-item .sig-line {
+            width: 160px;
+            border-top: 1px solid #666;
+            margin-bottom: 5px;
+        }
+        .cert-footer-item .sig-label {
+            font-size: 0.7rem;
+            color: #888;
+            letter-spacing: 1px;
+        }
+        .cert-seal {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            font-size: 0.65rem;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .no-print {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+            display: flex;
+            gap: 0.5rem;
+        }
+        .no-print button {
+            padding: 12px 24px;
+            font-size: 1rem;
+            font-weight: 700;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .btn-print { background: #4caf50; color: white; }
+        .btn-back { background: #666; color: white; }
+
+        @media print {
+            body { background: white; }
+            .no-print { display: none; }
+            .certificate-container { margin: 0; }
+            @page { size: landscape; margin: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print">
+        <button class="btn-print" onclick="window.print()">🖨️ Print / Save as PDF</button>
+        <button class="btn-back" onclick="history.back()">← Back</button>
+    </div>
+
+    <div class="certificate-container cert-class-{{ cert_class }}">
+        <div class="cert-bg">
+            <div class="corner-ornament corner-tl"></div>
+            <div class="corner-ornament corner-tr"></div>
+            <div class="corner-ornament corner-bl"></div>
+            <div class="corner-ornament corner-br"></div>
+
+            <div class="cert-ribbon">{{ platform_name }}</div>
+
+            <div class="cert-title">Certificate</div>
+            <div class="cert-subtitle">of Achievement</div>
+
+            <div class="cert-class-label">{{ cert_label }}</div>
+
+            <div class="cert-awarded">This is proudly presented to</div>
+            <div class="cert-name">{{ user_name }}</div>
+
+            <div class="cert-detail">
+                For successfully completing the course
+                <strong>"{{ course.title }}"</strong>
+                with an overall score of <strong>{{ score_pct }}%</strong>.
+                <br>Awarded on <strong>{{ award_date }}</strong>.
+            </div>
+
+            <div class="cert-footer">
+                <div class="cert-footer-item">
+                    <div class="sig-line"></div>
+                    <div class="sig-label">Platform Director</div>
+                </div>
+                <div class="cert-seal">VERIFIED</div>
+                <div class="cert-footer-item">
+                    <div class="sig-line"></div>
+                    <div class="sig-label">Date of Issue</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

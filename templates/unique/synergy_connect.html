@@ -1,0 +1,346 @@
+{% extends 'base.html' %}
+
+{% block title %}Synergy Connect{% endblock %}
+
+{% block content %}
+<div class="synergy-wrapper">
+    <div class="synergy-hero">
+        <div class="hero-content">
+            <h1><i class='bx bxs-network-chart'></i> Synergy Connect</h1>
+            <p>Don't just learn alone. Sync with peers, share meeting links, and grow together.</p>
+        </div>
+        <div class="hero-stats">
+            <div class="mini-stat">
+                <span class="val">{{ active_matches|length }}</span>
+                <span class="lbl">Active Syncs</span>
+            </div>
+            <div class="mini-stat">
+                <span class="val">{{ peers|length }}</span>
+                <span class="lbl">Potential Peers</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="synergy-layout">
+        <!-- Main Column: Matching & Active Syncs -->
+        <div class="synergy-main">
+            <!-- Active Syncs Section -->
+            {% if active_matches %}
+            <section class="mb-4">
+                <h2 class="section-title"><i class='bx bxs-plug'></i> Your Active Syncs</h2>
+                <div class="active-sync-grid">
+                    {% for match in active_matches %}
+                    <div class="sync-card">
+                        <div class="sync-info">
+                            <h3>{{ match.peer_name }}</h3>
+                            <span class="sync-course">{{ match.course_title }}</span>
+                        </div>
+                        
+                        <div class="sync-tools">
+                            <form action="{{ url_for('synergy_update_meeting') }}" method="POST" class="meeting-form">
+                                <input type="hidden" name="match_id" value="{{ match.id }}">
+                                <div class="input-group-sync">
+                                    <input type="text" name="meeting_link" value="{{ match.meeting_link }}" placeholder="Paste meeting link (Zoom/Meet)..." class="form-input-sm">
+                                    <button type="submit" class="btn-icon-save"><i class='bx bxs-save'></i></button>
+                                </div>
+                            </form>
+                            
+                            {% if match.meeting_link %}
+                            <a href="{{ match.meeting_link }}" target="_blank" class="btn btn-primary btn-sm w-100 mt-2">
+                                <i class='bx bx-video'></i> Join Meeting
+                            </a>
+                            {% endif %}
+                        </div>
+
+                        <div class="sync-log-box">
+                            <label><i class='bx bx-note'></i> Session Notes (Tracked by AI Mirror)</label>
+                            
+                            {% if match.sync_log %}
+                            <textarea readonly style="height: auto; min-height: 80px;">{{ match.sync_log }}</textarea>
+                            {% endif %}
+
+                            <form action="{{ url_for('synergy_update_notes') }}" method="POST" id="form-{{ match.id }}" style="margin-top: 0.5rem;">
+                                <input type="hidden" name="match_id" value="{{ match.id }}">
+                                <input type="hidden" name="transcript" id="transcript-{{ match.id }}" value="">
+                                
+                                <div class="ai-controls">
+                                    <button type="button" class="btn btn-sm btn-outline-primary w-100" id="btn-start-{{ match.id }}" onclick="startTranscription({{ match.id }})">
+                                        <i class='bx bx-microphone'></i> Start AI Meeting Tracker
+                                    </button>
+                                    <div id="recording-state-{{ match.id }}" style="display:none; text-align:center; padding: 0.5rem; background: #eef1ff; border-radius: 0.5rem; margin-top: 0.5rem;">
+                                        <span class="pulse" style="color: red; margin-right: 5px;">●</span> Listening to Meeting...
+                                        <div id="live-text-{{ match.id }}" style="font-size: 0.75rem; color: #555; margin-top: 0.5rem; font-style: italic; max-height: 50px; overflow-y: auto;"></div>
+                                        <button type="button" class="btn btn-sm btn-primary w-100 mt-2" onclick="stopAndSummarize({{ match.id }})">
+                                            <i class='bx bx-stop-circle'></i> Stop & Summarize
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                            <small class="mt-2" style="display:block;">Mirror tracking active: The AI listens via your microphone and summarizes key insights automatically.</small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </section>
+            {% endif %}
+
+            <!-- Matching Section -->
+            <section>
+                <h2 class="section-title"><i class='bx bxs-user-plus'></i> Find Your Learning Mate</h2>
+                <div class="peers-list-modern">
+                    {% if peers %}
+                        {% for peer in peers %}
+                        <div class="peer-row">
+                            <div class="peer-avatar-lg">
+                                {{ peer.full_name[:1] }}
+                            </div>
+                            <div class="peer-details">
+                                <div class="peer-name-row">
+                                    <h4>{{ peer.full_name }}</h4>
+                                    <span class="peer-role">{% if peer.progress > my_progress.get(peer.course_id, 0) %}Mentor{% else %}Peer{% endif %}</span>
+                                </div>
+                                <p class="peer-course-meta">{{ peer.course_title }} · {{ peer.progress }}% Progress</p>
+                            </div>
+                            <div class="peer-btn">
+                                <a href="{{ url_for('synergy_sync', peer_id=peer.id, course_id=peer.course_id) }}" class="btn btn-outline btn-sm">
+                                    <i class='bx bx-sync'></i> Request Sync
+                                </a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="glass-empty">
+                            <p>No new peers discovered yet. Explore more courses to find collaborators!</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </section>
+        </div>
+
+        <!-- Sidebar: Analytics & Tips -->
+        <div class="synergy-side">
+            <div class="glass-card chart-card">
+                <h3><i class='bx bx-line-chart'></i> Platform Synergy</h3>
+                <canvas id="synergyChart" height="200"></canvas>
+                <p class="chart-caption">Active collaborations across top courses.</p>
+            </div>
+
+            <div class="glass-card tip-card">
+                <div class="tip-icon"><i class='bx bxs-bulb'></i></div>
+                <h4>Mirror Tracking</h4>
+                <p>Synergy Connect is linked to your <strong>Cognitive Mirror</strong>. The links you share and the peer feedback you receive help the AI build a more accurate map of your expertise.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const ctx = document.getElementById('synergyChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: {{ chart_labels|safe }},
+            datasets: [{
+                data: {{ chart_values|safe }},
+                backgroundColor: ['#6200ea', '#00bfa5', '#f97316', '#3b82f6', '#ec4899'],
+                borderWidth: 0,
+                hoverOffset: 10
+            }]
+        },
+        options: {
+            plugins: {
+                legend: { display: false }
+            },
+            cutout: '70%'
+        }
+    });
+</script>
+
+<script>
+    let recognitions = {};
+    let fullTranscripts = {};
+
+    function startTranscription(matchId) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            alert("Your browser does not support Speech Recognition. Please use Chrome.");
+            return;
+        }
+
+        const recognition = new SpeechRecognition();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = 'en-US';
+
+        fullTranscripts[matchId] = "";
+        
+        recognition.onresult = (event) => {
+            let interimTranscript = '';
+            let finalTranscript = '';
+
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+                if (event.results[i].isFinal) {
+                    finalTranscript += event.results[i][0].transcript + ' ';
+                } else {
+                    interimTranscript += event.results[i][0].transcript;
+                }
+            }
+            
+            fullTranscripts[matchId] += finalTranscript;
+            document.getElementById('live-text-' + matchId).innerText = interimTranscript || finalTranscript;
+            document.getElementById('transcript-' + matchId).value = fullTranscripts[matchId];
+        };
+
+        recognition.onend = () => {
+            // Auto restart if it stops but we didn't stop it manually
+            if (recognitions[matchId]) {
+                try { recognition.start(); } catch(e){}
+            }
+        };
+
+        recognition.start();
+        recognitions[matchId] = recognition;
+
+        document.getElementById('btn-start-' + matchId).style.display = 'none';
+        document.getElementById('recording-state-' + matchId).style.display = 'block';
+    }
+
+    function stopAndSummarize(matchId) {
+        if (recognitions[matchId]) {
+            let rec = recognitions[matchId];
+            recognitions[matchId] = null; // Prevent restart
+            try { rec.stop(); } catch(e){}
+        }
+        
+        // Show loading state
+        const liveText = document.getElementById('live-text-' + matchId);
+        liveText.innerHTML = "<b>Summarizing with AI... Please wait.</b>";
+        
+        // Submit the form
+        setTimeout(() => {
+            document.getElementById('form-' + matchId).submit();
+        }, 500);
+    }
+</script>
+
+<style>
+    .synergy-wrapper { padding: 1rem 0; }
+    
+    .synergy-hero {
+        background: linear-gradient(135deg, #6200ea 0%, #3b82f6 100%);
+        padding: 3.5rem;
+        border-radius: 2rem;
+        color: white;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2.5rem;
+        box-shadow: 0 20px 40px rgba(98, 0, 234, 0.2);
+    }
+    
+    .hero-content h1 { font-size: 2.5rem; font-weight: 900; margin-bottom: 0.5rem; }
+    .hero-content p { font-size: 1.1rem; opacity: 0.9; }
+    
+    .hero-stats { display: flex; gap: 2rem; }
+    .mini-stat { text-align: center; }
+    .mini-stat .val { display: block; font-size: 2rem; font-weight: 900; }
+    .mini-stat .lbl { font-size: 0.8rem; text-transform: uppercase; opacity: 0.8; }
+
+    .synergy-layout {
+        display: grid;
+        grid-template-columns: 1fr 350px;
+        gap: 2.5rem;
+    }
+
+    .section-title { font-size: 1.35rem; font-weight: 800; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.75rem; }
+
+    /* Sync Cards */
+    .active-sync-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; }
+    .sync-card {
+        background: white;
+        padding: 1.75rem;
+        border-radius: 1.5rem;
+        border: 1px solid #eef0f5;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.03);
+    }
+    .sync-info h3 { margin: 0; font-size: 1.2rem; }
+    .sync-course { color: #6200ea; font-size: 0.85rem; font-weight: 700; }
+
+    .input-group-sync {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 1rem;
+    }
+    .form-input-sm {
+        flex: 1;
+        padding: 0.6rem 1rem;
+        border-radius: 0.75rem;
+        border: 1px solid #ddd;
+        font-size: 0.85rem;
+        background: #f8f9fa;
+    }
+    .btn-icon-save {
+        width: 38px;
+        height: 38px;
+        border-radius: 0.75rem;
+        background: #e9ecef;
+        border: none;
+        color: #495057;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .btn-icon-save:hover { background: #6200ea; color: white; }
+
+    .sync-log-box { margin-top: 1.5rem; border-top: 1px solid #eee; pt: 1rem; }
+    .sync-log-box label { font-size: 0.75rem; font-weight: 800; color: #666; display: block; margin-bottom: 0.5rem; }
+    .sync-log-box textarea {
+        width: 100%;
+        height: 80px;
+        background: #f8f9fa;
+        border: 1px solid #eef0f5;
+        border-radius: 0.75rem;
+        padding: 0.75rem;
+        font-size: 0.8rem;
+        resize: none;
+    }
+    .sync-log-box small { font-size: 0.65rem; color: #00bfa5; font-weight: 700; margin-top: 0.25rem; display: block; }
+
+    /* Peer List */
+    .peers-list-modern { background: white; border-radius: 1.5rem; border: 1px solid #eef0f5; overflow: hidden; }
+    .peer-row {
+        display: flex;
+        padding: 1.25rem 1.75rem;
+        align-items: center;
+        gap: 1.25rem;
+        border-bottom: 1px solid #f8f9fa;
+        transition: background 0.2s;
+    }
+    .peer-row:hover { background: #fbfbff; }
+    .peer-row:last-child { border: none; }
+    
+    .peer-avatar-lg {
+        width: 50px; height: 50px; background: #3b82f6; color: white;
+        border-radius: 1rem; display: flex; align-items: center; justify-content: center;
+        font-weight: 900; font-size: 1.4rem;
+    }
+    .peer-details { flex: 1; }
+    .peer-name-row { display: flex; align-items: center; gap: 0.5rem; }
+    .peer-name-row h4 { margin: 0; font-size: 1.05rem; }
+    .peer-role { font-size: 0.65rem; font-weight: 800; padding: 0.2rem 0.5rem; background: #eef1ff; color: #3b82f6; border-radius: 0.5rem; text-transform: uppercase; }
+    .peer-course-meta { margin: 0.1rem 0 0; font-size: 0.85rem; color: #777; }
+
+    /* Sidebar Cards */
+    .glass-card { background: white; padding: 1.75rem; border-radius: 1.5rem; border: 1px solid #eef0f5; margin-bottom: 1.5rem; }
+    .tip-card { display: flex; flex-direction: column; align-items: center; text-align: center; background: #f8fbff; }
+    .tip-icon { font-size: 2.5rem; color: #f97316; margin-bottom: 0.75rem; }
+    .chart-caption { font-size: 0.75rem; color: #888; text-align: center; margin-top: 1rem; }
+
+    @media (max-width: 1024px) {
+        .synergy-layout { grid-template-columns: 1fr; }
+        .synergy-hero { flex-direction: column; text-align: center; gap: 2rem; }
+    }
+</style>
+{% endblock %}

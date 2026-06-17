@@ -1,0 +1,290 @@
+{% extends 'base.html' %}
+{% block title %}{{ course.title }}{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+    <a href="{{ url_for('courses_list') }}">Courses</a>
+    <span class="breadcrumb-sep">›</span>
+    <span>{{ course.title }}</span>
+</div>
+
+<!-- Course Header -->
+<div class="card mb-2">
+    <div class="flex-between" style="flex-wrap: wrap; gap: 1rem;">
+        <div style="flex: 1; min-width: 200px;">
+            <span class="badge badge-info mb-1" style="display: inline-flex;">{{ course.category }}</span>
+            <h1 style="font-size: 1.5rem; margin-bottom: 0.5rem;">{{ course.title }}</h1>
+            <p style="margin-bottom: 0.75rem;">{{ course.description }}</p>
+            <div class="flex gap-2" style="flex-wrap: wrap; font-size: 0.8rem; color: var(--text-muted);">
+                <span>👤 {{ course.admin_name }}</span>
+                <span>📖 {{ course.lesson_count }} lessons</span>
+                <span>👥 {{ course.employee_count }} employees</span>
+            </div>
+        </div>
+        <div>
+            {% if session.role == 'employee' %}
+                {% if enrollment %}
+                    <span class="badge badge-success" style="font-size: 0.8rem; padding: 0.4rem 1rem;">✓ {{ _('Enrolled') }}</span>
+                    <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem; flex-wrap: wrap;">
+                        <form method="POST" action="{{ url_for('unenroll_course', course_id=course.id) }}">
+                            <button type="submit" class="btn btn-sm btn-danger">{{ _('Unenroll') }}</button>
+                        </form>
+                        <button type="button" class="btn btn-sm btn-outline" onclick="sharePage('{{ course.title }}')">🔗 {{ _('Share') }}</button>
+                    </div>
+                {% else %}
+                    <form method="POST" action="{{ url_for('enroll_course', course_id=course.id) }}">
+                        <button type="submit" class="btn btn-primary btn-lg">📚 {{ _('Enroll Now') }}</button>
+                    </form>
+                {% endif %}
+            {% elif session.role == 'admin' %}
+                <div class="btn-group">
+                    <a href="{{ url_for('edit_course', course_id=course.id) }}" class="btn btn-secondary">✏️ {{ _('Edit') }}</a>
+                    <a href="{{ url_for('add_lesson', course_id=course.id) }}" class="btn btn-primary">+ {{ _('Add Lesson') }}</a>
+                    <button type="button" class="btn btn-sm btn-outline" onclick="sharePage('{{ course.title }}')">🔗 {{ _('Share') }}</button>
+                    <form method="POST" action="{{ url_for('delete_course', course_id=course.id) }}" style="display:inline;" onsubmit="return confirm('DANGER: Delete this course and ALL its contents?');">
+                        <button type="submit" class="btn btn-outline btn-danger">🗑 {{ _('Delete') }}</button>
+                    </form>
+                </div>
+                {% if session.role == 'admin' %}
+                    <form method="POST" action="{{ url_for('admin_clear_course_enrollments', course_id=course.id) }}" style="margin-top: 0.5rem;" onsubmit="return confirm('ARE YOU SURE you want to clear all employee progress/enrollments? This cannot be undone.');">
+                        <button type="submit" class="btn btn-sm btn-outline btn-danger" style="width: 100%;">🗑 {{ _('Clear Enrollments') }}</button>
+                    </form>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+    
+    {% if enrollment %}
+    <div style="margin-top: 1rem;">
+        <div class="flex-between mb-1">
+            <span style="font-size: 0.8rem; color: var(--text-muted);">{{ _('Your Progress') }}</span>
+            <span style="font-size: 0.8rem; font-weight: 700; color: var(--accent);">{{ enrollment.progress|round(0)|int }}%</span>
+        </div>
+        <div class="progress-bar">
+            <div class="progress-fill" style="width: {{ enrollment.progress }}%"></div>
+        </div>
+        <div style="margin-top: 0.75rem;">
+            {% if enrollment.progress >= 100 %}
+            <a href="{{ url_for('view_certificate', course_id=course.id) }}" class="btn btn-sm" style="background: linear-gradient(90deg, #d4a843, #f5d778); color: #1a1a2e; font-weight: 700; border: none;" target="_blank">
+                🎓 View / Download Certificate
+            </a>
+            {% else %}
+            <span class="btn btn-sm" style="background: var(--border); color: var(--text-muted); cursor: not-allowed; border: none;" title="Complete all lessons to unlock your certificate">
+                🔒 Certificate (Complete all lessons)
+            </span>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- CSS-only Tabs -->
+<div class="tabs-container">
+    <input type="radio" id="tab-lessons-input" name="course-tabs" class="tab-input" checked hidden>
+    <input type="radio" id="tab-assessments-input" name="course-tabs" class="tab-input" hidden>
+    <input type="radio" id="tab-discussions-input" name="course-tabs" class="tab-input" hidden>
+    <input type="radio" id="tab-participants-input" name="course-tabs" class="tab-input" hidden>
+
+    <div class="tabs">
+        <label for="tab-lessons-input" class="tab">📖 {{ _('Lessons') }} ({{ lessons|length }})</label>
+        <label for="tab-assessments-input" class="tab">📝 {{ _('Assessments') }} ({{ assessments|length }})</label>
+        <label for="tab-discussions-input" class="tab">💬 {{ _('Discussions') }} ({{ discussions|length }})</label>
+        <label for="tab-participants-input" class="tab">👥 {{ _('Participants') }} ({{ participants|length + 1 }})</label>
+    </div>
+
+    <!-- Lessons Tab Content -->
+    <div class="tab-content" id="content-lessons">
+        {% if session.role == 'employee' and not enrollment %}
+        <!-- Employee not enrolled — lock the lessons -->
+        <div class="empty-state" style="padding: 3rem 1rem;">
+            <div class="empty-state-icon">🔒</div>
+            <div class="empty-state-title">{{ _('Enroll to Access Lessons') }}</div>
+            <div class="empty-state-desc">{{ _('You must enroll in this course before you can view its lessons.') }}</div>
+            <form method="POST" action="{{ url_for('enroll_course', course_id=course.id) }}" style="margin-top: 1rem;">
+                <button type="submit" class="btn btn-primary">📚 {{ _('Enroll Now') }}</button>
+            </form>
+        </div>
+        {% elif lessons %}
+            {% for lesson in lessons %}
+            <div class="discussion-item" style="display: flex; align-items: center; gap: 1rem;">
+                <div class="check" style="width: 28px; height: 28px; border-radius: var(--radius-full); border: 2px solid {% if lesson.is_completed %}var(--accent){% else %}var(--border){% endif %}; display: flex; align-items: center; justify-content: center; flex-shrink: 0; {% if lesson.is_completed %}background: var(--accent); color: white;{% endif %} font-size: 0.75rem;">
+                    {% if lesson.is_completed %}✓{% else %}{{ loop.index }}{% endif %}
+                </div>
+                <div style="flex: 1;">
+                    <a href="{{ url_for('view_lesson', course_id=course.id, lesson_id=lesson.id) }}" style="text-decoration: none;">
+                        <div style="font-weight: 600; font-size: 0.95rem; color: var(--text-primary);">{{ lesson.title }}</div>
+                    </a>
+                    <div style="font-size: 0.75rem; color: var(--text-muted); display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem;">
+                        <span>Lesson {{ loop.index }}</span>
+                        {% if lesson.is_completed %} <span>· <span style="color: var(--accent);">{{ _('Completed') }} ✓</span></span>{% endif %}
+                        {% if lesson.has_questionnaire %}
+                            <span class="badge badge-info" style="font-size: 0.65rem; padding: 0.1rem 0.4rem;">{{ _('Quiz Attached') }}</span>
+                        {% endif %}
+                        {% if lesson.is_hidden %} <span>· <span class="badge badge-warning" style="font-size: 0.65rem; padding: 0.1rem 0.4rem;">{{ _('Hidden') }}</span></span>{% endif %}
+                    </div>
+                </div>
+                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                    {% if session.role == 'admin' %}
+                        <form method="POST" action="{{ url_for('toggle_lesson_visibility', lesson_id=lesson.id) }}">
+                            <button type="submit" class="btn btn-sm btn-outline" title="Toggle visibility">
+                                {% if lesson.is_hidden %}🔓 {{ _('Show') }}{% else %}🔒 {{ _('Hide') }}{% endif %}
+                            </button>
+                        </form>
+                    {% endif %}
+                    <a href="{{ url_for('view_lesson', course_id=course.id, lesson_id=lesson.id) }}" class="btn btn-sm btn-outline">
+                        {% if lesson.is_completed %}{{ _('Review') }}{% else %}{{ _('Start') }}{% endif %}
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            {% if session.role != 'employee' or enrollment %}
+            <div class="empty-state">
+                <div class="empty-state-icon">📖</div>
+                <div class="empty-state-title">{{ _('No Lessons Yet') }}</div>
+                <div class="empty-state-desc">{{ _('Lessons will appear here once the admin adds them.') }}</div>
+                {% if session.role == 'admin' %}
+                    <a href="{{ url_for('add_lesson', course_id=course.id) }}" class="btn btn-primary">+ {{ _('Add First Lesson') }}</a>
+                {% endif %}
+            </div>
+            {% endif %}
+        {% endif %}
+    </div>
+
+    <!-- Assessments Tab Content -->
+    <div class="tab-content" id="content-assessments">
+        {% if assessments %}
+            {% for a in assessments %}
+            <div class="discussion-item">
+                <div class="flex-between">
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <div style="font-weight: 600; font-size: 0.95rem;">{{ a.title }}</div>
+                            {% if a.is_hidden %}
+                                <span class="badge badge-warning" style="font-size: 0.65rem; padding: 0.1rem 0.4rem;">{{ _('Hidden') }}</span>
+                            {% endif %}
+                            {% if a.is_expired %}
+                                <span class="badge badge-danger" style="font-size: 0.65rem; padding: 0.1rem 0.4rem;">{{ _('Expired') }}</span>
+                            {% elif a.available_until %}
+                                <span class="badge badge-success" style="font-size: 0.65rem; padding: 0.1rem 0.4rem;">{{ _('Active') }}</span>
+                            {% endif %}
+                        </div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">
+                            {% if a.available_until %}📅 Until: {{ a.available_until }} · {% endif %}
+                            {% if a.time_limit %}⏱ {{ a.time_limit }} min{% else %}{{ _('No time limit') }}{% endif %}
+                            {% if a.description %} · {{ a.description[:80] }}{% endif %}
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        {% if session.role == 'admin' %}
+                            <form method="POST" action="{{ url_for('toggle_assessment_visibility', assessment_id=a.id) }}">
+                                <button type="submit" class="btn btn-sm btn-outline" title="Toggle visibility">
+                                    {% if a.is_hidden %}🔓 {{ _('Show') }}{% else %}🔒 {{ _('Hide') }}{% endif %}
+                                </button>
+                            </form>
+                            <a href="{{ url_for('view_submissions', course_id=course.id, assessment_id=a.id) }}" class="btn btn-sm btn-outline">{{ _('View Submissions') }}</a>
+                        {% endif %}
+                        {% if a.submission_id %}
+                            <span class="badge badge-success">{{ _('Score') }}: {{ a.my_score|int }}/{{ a.my_max_score|int }}</span>
+                            <a href="{{ url_for('take_assessment', course_id=course.id, assessment_id=a.id) }}" class="btn btn-sm btn-outline">{{ _('Results') }}</a>
+                        {% else %}
+                            <a href="{{ url_for('take_assessment', course_id=course.id, assessment_id=a.id) }}" class="btn btn-sm btn-primary">{{ _('Take Quiz') }}</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <div class="empty-state-icon">📝</div>
+                <div class="empty-state-title">{{ _('No Assessments Yet') }}</div>
+                <div class="empty-state-desc">{{ _('Assessments will appear here when available.') }}</div>
+                {% if session.role == 'admin' %}
+                    <a href="{{ url_for('create_assessment', course_id=course.id) }}" class="btn btn-primary">+ {{ _('Create Quiz') }}</a>
+                {% endif %}
+            </div>
+        {% endif %}
+        {% if session.role == 'admin' and assessments %}
+            <div class="mt-2">
+                <a href="{{ url_for('create_assessment', course_id=course.id) }}" class="btn btn-sm btn-primary">+ {{ _('Create Quiz') }}</a>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Discussions Tab Content -->
+    <div class="tab-content" id="content-discussions">
+        <div class="mb-2 text-center">
+            <a href="{{ url_for('create_discussion', course_id=course.id) }}" class="btn btn-sm btn-primary">+ {{ _('New Discussion') }}</a>
+            {% if discussions|length > 0 %}
+            <a href="{{ url_for('discussions_list', course_id=course.id) }}" class="btn btn-sm btn-outline">{{ _('View All') }}</a>
+            {% endif %}
+        </div>
+        
+        {% if discussions %}
+            {% for d in discussions %}
+            <a href="{{ url_for('view_discussion', course_id=course.id, discussion_id=d.id) }}" style="text-decoration: none;">
+                <div class="discussion-item">
+                    <div class="discussion-title">{{ d.title }}</div>
+                    <div class="discussion-meta">
+                        {{ d.author_name }} · {{ d.reply_count }} replies · {{ d.created_at|timeago }}
+                    </div>
+                </div>
+            </a>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <div class="empty-state-icon">💬</div>
+                <div class="empty-state-title">{{ _('No Discussions Yet') }}</div>
+                <div class="empty-state-desc">{{ _('Start a discussion to engage with your classmates.') }}</div>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Participants Tab Content -->
+    <div class="tab-content" id="content-participants">
+        <!-- Trainer row -->
+        <div class="discussion-item" style="display: flex; align-items: center; gap: 1rem;">
+            <div style="width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent-hover, #6d28d9)); display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; color: white; font-weight: 700;">
+                {{ course.admin_name[0]|upper }}
+            </div>
+            <div style="flex: 1;">
+                <div style="font-weight: 600; font-size: 0.95rem;">{{ course.admin_name }}</div>
+                <div style="font-size: 0.75rem; color: var(--text-muted);">{{ _('Instructor') }}</div>
+            </div>
+            <span class="badge badge-info" style="font-size: 0.7rem;">{{ _('Trainer') }}</span>
+        </div>
+
+        <!-- Employee rows -->
+        {% if participants %}
+            {% for p in participants %}
+            <div class="discussion-item" style="display: flex; align-items: center; gap: 1rem;">
+                <div style="width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(135deg, #10b981, #059669); display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; color: white; font-weight: 700;">
+                    {{ p.full_name[0]|upper }}
+                </div>
+                <div style="flex: 1;">
+                    <div style="font-weight: 600; font-size: 0.95rem;">{{ p.full_name }}</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted); display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; margin-top: 0.2rem;">
+                        <span>{{ _('Progress') }}: <strong>{{ p.progress|round(0)|int }}%</strong></span>
+                        <span>{{ _('Lessons') }}: <strong>{{ p.lessons_completed|default(0)|int }}/{{ lessons|length }}</strong></span>
+                        <span>{{ _('Quizzes') }}: <strong>{{ p.quizzes_completed|default(0)|int }}</strong></span>
+                        <span>⭐ {{ p.participation_points }} {{ _('pts') }}</span>
+                    </div>
+                    <div class="progress-bar" style="margin-top: 0.25rem; height: 4px;">
+                        <div class="progress-fill" style="width: {{ p.progress }}%;"></div>
+                    </div>
+                </div>
+                <span class="badge badge-success" style="font-size: 0.7rem;">{{ _('Employee') }}</span>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <div class="empty-state-icon">👥</div>
+                <div class="empty-state-title">{{ _('No Employees Enrolled Yet') }}</div>
+                <div class="empty-state-desc">{{ _('Participants will appear here once employees enroll.') }}</div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}{% endblock %}

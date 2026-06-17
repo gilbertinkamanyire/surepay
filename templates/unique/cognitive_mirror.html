@@ -1,0 +1,352 @@
+{% extends 'base.html' %}
+
+{% block title %}Cognitive Mirror{% endblock %}
+
+{% block content %}
+<div class="mirror-header">
+    <h1><i class='bx bx-reflect-vertical'></i> The Cognitive Mirror</h1>
+    <p>A reflection of your unique learning journey and patterns.</p>
+</div>
+
+<div class="mirror-grid">
+    <!-- Focus Window Card -->
+    <div class="mirror-card focus-card">
+        <div class="card-icon"><i class='bx bxs-watch'></i></div>
+        <h3>Your Peak Focus Window</h3>
+        <div class="focus-badge">{{ focus_window }}</div>
+        <p>You are most active during this time. Schedule your hardest lessons for this period for maximum retention.</p>
+    </div>
+
+    <!-- Struggles Card -->
+    <div class="mirror-card struggle-card">
+        <div class="card-icon"><i class='bx bxs-bolt-circle'></i></div>
+        <h3>Critical Reflection Points</h3>
+        {% if struggles %}
+            <ul>
+                {% for s in struggles %}
+                    <li>
+                        <strong>{{ s.title }}</strong>: Viewed {{ s.views }} times. 
+                        <span>Consider reaching out to a peer in Synergy Connect for this topic.</span>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>You're sailing smoothly! No major bottlenecks detected in your current courses.</p>
+        {% endif %}
+    </div>
+
+    <!-- Strengths Card -->
+    <div class="mirror-card strength-card">
+        <div class="card-icon"><i class='bx bxs-medal'></i></div>
+        <h3>Knowledge Strongholds</h3>
+        {% if strengths %}
+            <div class="strength-tags">
+                {% for s in strengths %}
+                    <span class="tag">{{ s.title }}</span>
+                {% endfor %}
+            </div>
+            <p>You have mastered these topics quickly. You might be a great "Synergy Mentor" for these!</p>
+        {% else %}
+            <p>Complete more lessons to see your areas of expertise.</p>
+        {% endif %}
+    </div>
+
+    <!-- Collaborative Sync Card -->
+    <div class="mirror-card synergy-card">
+        <div class="card-icon"><i class='bx bxs-group'></i></div>
+        <h3>Collaborative Synergy</h3>
+        <div class="focus-badge" style="background: #00bfa5;">{{ collab_count }} Connections</div>
+        <p>Your sync history shows how much you've grown through peer interaction. Every meeting link shared is a step toward collective mastery.</p>
+    </div>
+</div>
+
+<section class="competency-section">
+    <div class="section-header" style="margin-bottom: 1.5rem;">
+        <h2 class="section-title">Personal Competency Mirror</h2>
+        <p class="section-subtitle">Helps you track your <strong style="color: var(--accent);">real competencies</strong>, not just marks. See which skills you've mastered, what's in progress, and what you haven't started yet.</p>
+    </div>
+
+    {% if competencies_mastered or competencies_in_progress or competencies_not_started %}
+    <div class="competency-grid">
+        <div class="competency-card card-mastered">
+            <h3>Skills Mastered</h3>
+            <p class="card-note">Your strongest competencies based on course progress.</p>
+            {% if competencies_mastered %}
+                {% for skill in competencies_mastered %}
+                    <div class="skill-row">
+                        <div>
+                            <strong>{{ skill.title }}</strong>
+                            <div class="skill-meta">{{ skill.category }} · {{ skill.completed_lessons }} / {{ skill.total_lessons }} lessons</div>
+                        </div>
+                        <span class="skill-pill pill-success">Level: Master</span>
+                        <div class="progress-bar mini">
+                            <div class="progress-fill" style="width: {{ skill.progress }}%;"></div>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p class="empty-text">No mastered competencies yet. Keep learning to unlock this zone.</p>
+            {% endif %}
+        </div>
+
+        <div class="competency-card card-progress">
+            <h3>In Progress</h3>
+            <p class="card-note">Competencies you're actively building with consistent progress.</p>
+            {% if competencies_in_progress %}
+                {% for skill in competencies_in_progress %}
+                    <div class="skill-row">
+                        <div>
+                            <strong>{{ skill.title }}</strong>
+                            <div class="skill-meta">{{ skill.category }} · {{ skill.completed_lessons }} / {{ skill.total_lessons }} lessons</div>
+                        </div>
+                        <span class="skill-pill pill-warning">Level: Learner</span>
+                        <div class="progress-bar mini">
+                            <div class="progress-fill" style="width: {{ skill.progress }}%;"></div>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p class="empty-text">Nothing in progress yet. Start a course and the mirror will reflect your learning momentum.</p>
+            {% endif %}
+        </div>
+
+        <div class="competency-card card-not-started">
+            <h3>Not Yet Started</h3>
+            <p class="card-note">Competencies you've enrolled in but not begun yet.</p>
+            {% if competencies_not_started %}
+                {% for skill in competencies_not_started %}
+                    <div class="skill-row">
+                        <div>
+                            <strong>{{ skill.title }}</strong>
+                            <div class="skill-meta">{{ skill.category }} · {{ skill.total_lessons }} lessons</div>
+                        </div>
+                        <span class="skill-pill pill-muted">Level: Novice</span>
+                        <div class="progress-bar mini">
+                            <div class="progress-fill" style="width: 5%;"></div>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p class="empty-text">No unstarted competencies. Great job staying engaged with your enrolled courses.</p>
+            {% endif %}
+        </div>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class='bx bx-book-open' style="font-size: 3rem; opacity: 0.3;"></i>
+        <p>Enroll in a course and complete lessons to see your personal competencies reflected here.</p>
+    </div>
+    {% endif %}
+</section>
+
+<div class="mirror-history">
+    <h2>AI Learning Insights</h2>
+    {% if stored_insights %}
+        {% for insight in stored_insights %}
+            <div class="insight-item">
+                <span class="insight-type">{{ insight.insight_type|title }}</span>
+                <p>{{ insight.content }}</p>
+                <small>{{ insight.created_at }}</small>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="empty-state">
+            <i class='bx bx-analyse' style="font-size: 3rem; opacity: 0.3;"></i>
+            <p>Our AI is still gathering data on your learning behavior. Check back after completing a few more quizzes!</p>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+    .mirror-header {
+        text-align: center;
+        margin-bottom: 3rem;
+        padding: 2rem;
+        background: linear-gradient(135deg, #6200ea11 0%, #00bfa511 100%);
+        border-radius: 20px;
+    }
+    
+    .mirror-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 2rem;
+        margin-bottom: 3rem;
+    }
+    
+    .mirror-card {
+        background: white;
+        padding: 2rem;
+        border-radius: 24px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        border: 1px solid #f0f0f0;
+        transition: transform 0.3s ease;
+    }
+    
+    .mirror-card:hover {
+        transform: translateY(-5px);
+    }
+    
+    .card-icon {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+        color: #6200ea;
+    }
+    
+    .focus-badge {
+        display: inline-block;
+        padding: 0.5rem 1.5rem;
+        background: #6200ea;
+        color: white;
+        border-radius: 50px;
+        font-weight: bold;
+        margin: 1rem 0;
+    }
+    
+    .section-subtitle {
+        margin-top: 0.5rem;
+        color: #555;
+        max-width: 680px;
+        line-height: 1.6;
+    }
+
+    .competency-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .competency-card {
+        background: white;
+        padding: 1.75rem;
+        border-radius: 22px;
+        border: 1px solid #e8e8f0;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.04);
+        min-height: 280px;
+    }
+
+    .competency-card h3 {
+        margin-top: 0;
+        margin-bottom: 0.5rem;
+    }
+
+    .card-note {
+        margin-bottom: 1.25rem;
+        color: #666;
+        font-size: 0.94rem;
+    }
+
+    .skill-row {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 0.75rem;
+        align-items: flex-start;
+        margin-bottom: 1rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid #f1f1f6;
+    }
+
+    .skill-row:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+    }
+
+    .skill-meta {
+        font-size: 0.82rem;
+        color: #777;
+        margin-top: 0.35rem;
+    }
+
+    .skill-pill {
+        font-size: 0.75rem;
+        padding: 0.35rem 0.75rem;
+        border-radius: 999px;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .pill-success {
+        color: #1a6b3d;
+        background: #daf4e5;
+    }
+
+    .pill-warning {
+        color: #7b5607;
+        background: #fff4d2;
+    }
+
+    .pill-muted {
+        color: #495057;
+        background: #eceef3;
+    }
+
+    .progress-bar.mini {
+        grid-column: 1 / -1;
+        height: 8px;
+        background: #edf2f8;
+        border-radius: 999px;
+        overflow: hidden;
+        margin-top: 0.25rem;
+    }
+
+    .progress-bar.mini .progress-fill {
+        height: 100%;
+        width: 0;
+        background: linear-gradient(90deg, #6200ea, #00bfa5);
+        border-radius: 999px;
+        transition: width 0.3s ease;
+    }
+
+    .empty-text {
+        color: #555;
+        line-height: 1.6;
+    }
+
+    .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+        padding: 2rem;
+        background: #fbfbff;
+        border: 1px dashed #d8d8e8;
+        border-radius: 20px;
+        text-align: center;
+        color: #555;
+    }
+
+    .strength-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin: 1rem 0;
+    }
+    
+    .tag {
+        background: #00bfa511;
+        color: #00bfa5;
+        padding: 0.3rem 0.8rem;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        font-weight: 600;
+    }
+    
+    .insight-item {
+        background: #fafafa;
+        padding: 1.5rem;
+        border-radius: 16px;
+        margin-bottom: 1rem;
+        border-left: 4px solid #6200ea;
+    }
+    
+    .insight-type {
+        font-weight: bold;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        color: #6200ea;
+        letter-spacing: 1px;
+    }
+</style>
+{% endblock %}

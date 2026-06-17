@@ -1,0 +1,168 @@
+{% extends 'base.html' %}
+{% block title %}Manage Users{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>👥 User Management</h1>
+    <p>Manage all platform users</p>
+</div>
+
+<!-- Search & Filter + Add User -->
+<div class="layout-grid layout-grid-2" style="margin-bottom: 2rem; align-items: flex-end;">
+    <div class="card" style="padding: 1.5rem;">
+        <h3 style="margin-bottom: 1rem;"><i class='bx bx-search'></i> Filter Users</h3>
+        <form method="GET" action="{{ url_for('admin_users') }}">
+            <div class="form-group">
+                <input type="text" name="search" class="form-input" placeholder="Name, Username or Email" value="{{ search }}">
+            </div>
+            <div class="flex-between" style="gap: 1rem; flex-wrap: wrap;">
+                <select name="role" class="form-select">
+                    <option value="">All Roles</option>
+                    <option value="employee" {% if role_filter == 'employee' %}selected{% endif %}>Employees</option>
+                    <option value="admin" {% if role_filter == 'admin' %}selected{% endif %}>Admins</option>
+                </select>
+                <select name="dept" class="form-select">
+                    <option value="">All Departments</option>
+                    {% for dept in departments %}
+                    <option value="{{ dept.id }}" {% if dept_filter == dept.id %}selected{% endif %}>{{ dept.name }}</option>
+                    {% endfor %}
+                </select>
+                <div class="btn-group">
+                    <button type="submit" class="btn btn-primary">Search</button>
+                    {% if search or role_filter or dept_filter %}
+                    <a href="{{ url_for('admin_users') }}" class="btn btn-secondary">Clear</a>
+                    {% endif %}
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <div class="card" style="padding: 1.5rem; border-color: var(--accent-light);">
+        <h3 style="margin-bottom: 1rem; color: var(--accent);"><i class='bx bx-user-plus'></i> Quick Add User</h3>
+        <form method="POST" action="{{ url_for('admin_add_user') }}">
+            <div class="layout-grid layout-grid-2" style="gap: 0.75rem;">
+                <input type="text" name="full_name" class="form-input" placeholder="Full Name" required>
+                <input type="text" name="username" class="form-input" placeholder="Username" required>
+                <input type="email" name="email" class="form-input" placeholder="Email" required>
+                <input type="password" name="password" class="form-input" placeholder="New Password" required>
+            </div>
+            <div class="flex-between" style="margin-top: 1rem;">
+                <select name="role" class="form-select" style="max-width: 150px;">
+                    <option value="employee">Employee</option>
+                    <option value="admin">Admin</option>
+                </select>
+                <button type="submit" class="btn btn-primary"><i class='bx bx-plus'></i> Add User</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="card" style="padding: 1.5rem; border-color: #fee2e2; background: #fffafb; grid-column: span 2;">
+        <h3 style="margin-bottom: 1rem; color: #ef4444;"><i class='bx bx-trash'></i> Bulk Database Cleanup</h3>
+        <p style="font-size: 0.85rem; color: #7f1d1d; margin-bottom: 1rem;">Caution: These actions will permanently remove ALL users of the selected role and their associated data.</p>
+        <div class="flex" style="width: 100%; gap: 1rem;">
+            <form action="{{ url_for('admin_clear_role', role='employee') }}" method="POST" onsubmit="return confirm('DELETE ALL STUDENTS? This action is IRREVERSIBLE. Proceed?');" style="flex: 1;">
+                <button type="submit" class="btn btn-outline" style="width: 100%; border-color: #ef4444; color: #ef4444;">Clear All Employees</button>
+            </form>
+            <form action="{{ url_for('admin_clear_role', role='admin') }}" method="POST" onsubmit="return confirm('DELETE ALL ADMINS? This will also remove their courses and materials. IRREVERSIBLE. Proceed?');" style="flex: 1;">
+                <button type="submit" class="btn btn-outline" style="width: 100%; border-color: #ef4444; color: #ef4444;">Clear All Admins</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Users Table -->
+<div class="table-wrapper">
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Verified</th>
+                <th>Joined</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr>
+                <td>{{ user.id }}</td>
+                <td><strong>{{ user.full_name }}</strong></td>
+                <td>{{ user.username }}</td>
+                <td>{{ user.email }}</td>
+                <td><span class="badge badge-{{ user.role }}">{{ user.role }}</span></td>
+                <td>
+                    {% if user.is_active %}
+                        <span class="badge badge-success">Active</span>
+                    {% else %}
+                        <span class="badge badge-danger">Inactive</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if user.role == 'employee' or user.is_verified %}
+                        <span class="badge badge-success">Yes</span>
+                    {% else %}
+                        <span class="badge badge-danger">Pending</span>
+                    {% endif %}
+                </td>
+                <td>{{ user.created_at|timeago }}</td>
+                <td style="white-space: nowrap;">
+                    <div class="btn-group">
+                        {% if user.role == 'admin' and not user.is_verified %}
+                        <form method="POST" action="{{ url_for('verify_admin', user_id=user.id) }}">
+                            <button type="submit" class="btn btn-sm btn-success" title="Verify Admin">Verify</button>
+                        </form>
+                        {% endif %}
+                        
+                        <form method="POST" action="{{ url_for('toggle_user', user_id=user.id) }}">
+                            <button type="submit" class="btn btn-sm {% if user.is_active %}btn-secondary{% else %}btn-primary{% endif %}" title="{{ 'Deactivate' if user.is_active else 'Activate' }}">
+                                <i class='bx bx-power-off'></i>
+                            </button>
+                        </form>
+
+                        <!-- Change Password (CSS-only trigger via details) -->
+                        <details style="position: relative; display: inline-block;">
+                            <summary class="btn btn-sm btn-outline" style="list-style: none; padding: 0.45rem 0.8rem;" title="Change Password"><i class='bx bx-key'></i></summary>
+                            <div class="card" style="position: absolute; right: 0; bottom: 100%; z-index: 1000; width: 260px; padding: 1.25rem; box-shadow: var(--shadow-lg); margin-bottom: 0.5rem; border: 1px solid var(--accent-light);">
+                                <form method="POST" action="{{ url_for('admin_edit_password', user_id=user.id) }}">
+                                    <h4 style="font-size: 0.9rem; margin-bottom: 0.75rem; color: var(--accent);">🔑 Reset Password</h4>
+                                    <p style="font-size: 0.8rem; margin-bottom: 0.75rem; line-height: 1.3;">New password for <strong>{{ user.username }}</strong>:</p>
+                                    
+                                    <input type="password" name="new_password" class="form-input" placeholder="New Password" required style="margin-bottom: 0.75rem; font-size: 0.85rem;">
+                                    <input type="password" name="confirm_password" class="form-input" placeholder="Confirm Password" required style="margin-bottom: 1rem; font-size: 0.85rem;">
+                                    
+                                    <div class="flex-between">
+                                        <button type="submit" class="btn btn-sm btn-primary" style="flex: 1;">Update</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </details>
+
+                        <form method="POST" action="{{ url_for('admin_send_reset', user_id=user.id) }}" title="Send Reset Email">
+                            <button type="submit" class="btn btn-sm btn-outline" style="color: var(--accent); border-color: var(--accent-light);">
+                                <i class='bx bx-mail-send'></i>
+                            </button>
+                        </form>
+
+                        {% if user.id != session.user_id %}
+                        <form method="POST" action="{{ url_for('admin_delete_user', user_id=user.id) }}" onsubmit="return confirm('Are you sure you want to PERMANENTLY delete this user? This cannot be undone.');">
+                            <button type="submit" class="btn btn-sm btn-danger" title="Delete User">
+                                <i class='bx bx-trash'></i>
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div style="margin-top: 1rem; font-size: 0.8rem; color: var(--text-muted);">
+    Showing {{ users|length }} user(s)
+</div>
+{% endblock %}

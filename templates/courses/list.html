@@ -1,0 +1,135 @@
+{% extends 'base.html' %}
+{% block title %}Browse Training Courses{% endblock %}
+{% block body_class %}page-courses{% endblock %}
+
+{% block content %}
+<div class="page-header" style="flex-direction: row; justify-content: space-between; align-items: center;">
+    <div>
+        <h1>🎓 Training Courses</h1>
+        <p>Select a department to browse its courses</p>
+    </div>
+    {% if session.role == 'admin' %}
+        <a href="{{ url_for('create_course', dept_id=current_dept) }}" class="btn btn-primary">+ Add Course</a>
+    {% endif %}
+</div>
+
+<!-- Department Selector -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+    {% for dept in departments %}
+    <a href="{{ url_for('courses_list', dept=dept.id) }}" style="text-decoration: none;">
+        <div style="padding: 1.25rem 0.75rem; border-radius: var(--radius-lg); text-align: center; border: 2px solid {% if current_dept == dept.id %}var(--accent){% else %}var(--border){% endif %}; background: {% if current_dept == dept.id %}var(--accent-surface){% else %}var(--bg-card){% endif %}; transition: all 0.25s; cursor: pointer;"
+             onmouseover="this.style.borderColor='var(--accent)'; this.style.transform='translateY(-2px)';"
+             onmouseout="this.style.borderColor='{% if current_dept == dept.id %}var(--accent){% else %}var(--border){% endif %}'; this.style.transform='';">
+            <div style="font-size: 1.75rem; margin-bottom: 0.35rem;">
+                {% if dept.name == 'SIMS' %}🎓
+                {% elif dept.name == 'CMS' %}📋
+                {% elif dept.name == 'PMS' %}📊
+                {% elif dept.name == 'Core Banking' %}🏦
+                {% else %}💼{% endif %}
+            </div>
+            <div style="font-size: 0.78rem; font-weight: 700; color: var(--text-primary);">{{ dept.name }}</div>
+        </div>
+    </a>
+    {% endfor %}
+</div>
+
+{% if current_dept %}
+<!-- Active Department Label + Search -->
+<div style="margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+    <span style="font-size: 0.85rem; color: var(--text-muted);">Showing courses for:</span>
+    {% for dept in departments %}
+        {% if dept.id == current_dept %}
+        <span class="badge badge-info" style="font-size: 0.8rem;">
+            {% if dept.name == 'SIMS' %}🎓{% elif dept.name == 'CMS' %}📋{% elif dept.name == 'PMS' %}📊{% elif dept.name == 'Core Banking' %}🏦{% else %}💼{% endif %}
+            {{ dept.name }}
+        </span>
+        {% endif %}
+    {% endfor %}
+    <a href="{{ url_for('courses_list') }}" style="font-size: 0.8rem; color: var(--text-muted);">✕ Clear</a>
+</div>
+
+<form method="GET" action="{{ url_for('courses_list') }}" style="margin-bottom: 1.5rem;">
+    <input type="hidden" name="dept" value="{{ current_dept }}">
+    <div class="search-bar">
+        <input type="text" name="search" class="form-input" placeholder="🔍 Search courses in this department..." value="{{ search }}">
+        <button type="submit" class="btn btn-primary">Search</button>
+        {% if search %}
+        <a href="{{ url_for('courses_list', dept=current_dept) }}" class="btn btn-secondary">Clear Search</a>
+        {% endif %}
+    </div>
+</form>
+
+<!-- Course Grid -->
+{% if courses %}
+<div class="course-grid">
+    {% for course in courses %}
+    <a href="{{ url_for('course_detail', course_id=course.id) }}" class="course-card" style="text-decoration: none; color: inherit;">
+        <div class="course-card-image" {% if course.image_url %}style="background-image: linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.2)), url('{{ course.image_url }}'); background-size: cover; background-position: center;"{% endif %}>
+            <span class="course-card-category">{{ course.department_name }}</span>
+            {% if not course.image_url %}
+            <span class="course-card-icon">
+                {% if course.department_name == 'SIMS' %}🎓
+                {% elif course.department_name == 'CMS' %}📋
+                {% elif course.department_name == 'PMS' %}📊
+                {% elif course.department_name == 'Core Banking' %}🏦
+                {% else %}📚{% endif %}
+            </span>
+            {% endif %}
+        </div>
+        <div class="course-card-body">
+            <div class="course-card-title">{{ course.title }}</div>
+            <div class="course-card-desc">{{ (course.description or '')[:120] }}{% if course.description and course.description|length > 120 %}...{% endif %}</div>
+            <div class="course-card-meta">
+                <span>👤 {{ course.admin_name }}</span>
+                <span>📖 {{ course.lesson_count }} lessons</span>
+                <span>👥 {{ course.student_count }} enrolled</span>
+            </div>
+        </div>
+    </a>
+    {% endfor %}
+</div>
+
+<!-- Pagination -->
+{% if total_pages > 1 %}
+<div class="pagination">
+    {% if page > 1 %}
+        <a href="{{ url_for('courses_list', page=page-1, search=search, dept=current_dept) }}">← Prev</a>
+    {% else %}
+        <span class="disabled">← Prev</span>
+    {% endif %}
+    {% for p in range(1, total_pages + 1) %}
+        {% if p == page %}
+            <span class="active">{{ p }}</span>
+        {% else %}
+            <a href="{{ url_for('courses_list', page=p, search=search, dept=current_dept) }}">{{ p }}</a>
+        {% endif %}
+    {% endfor %}
+    {% if page < total_pages %}
+        <a href="{{ url_for('courses_list', page=page+1, search=search, dept=current_dept) }}">Next →</a>
+    {% else %}
+        <span class="disabled">Next →</span>
+    {% endif %}
+</div>
+{% endif %}
+
+{% else %}
+<div class="empty-state">
+    <div class="empty-state-icon">🔍</div>
+    <div class="empty-state-title">No Courses Found</div>
+    <div class="empty-state-desc">
+        {% if search %}No courses match "{{ search }}". Try a different search term.
+        {% else %}No courses available in this department yet. Check back soon!{% endif %}
+    </div>
+</div>
+{% endif %}
+
+{% else %}
+<!-- No department selected — prompt to pick one -->
+<div class="empty-state" style="padding: 4rem 2rem;">
+    <div class="empty-state-icon">👆</div>
+    <div class="empty-state-title">Select a Department</div>
+    <div class="empty-state-desc">Choose a department above to see its available courses.</div>
+</div>
+{% endif %}
+
+{% endblock %}

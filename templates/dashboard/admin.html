@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+{% block title %}Admin Dashboard{% endblock %}
+{% block body_class %}page-dashboard{% endblock %}
+
+{% block content %}
+
+<!-- Blue & Green Welcome Note -->
+<section class="welcome-banner">
+    <span class="welcome-eyebrow"><i class='bx bxs-shield'></i> {{ platform.company_name }} Admin</span>
+    <h1>Welcome, <span class="welcome-name">{{ current_user.full_name }}</span></h1>
+    <p>Here's a snapshot of your platform. Manage courses, people and content from the panel on the left.</p>
+    <div class="welcome-actions">
+        <a href="{{ url_for('create_course') }}" class="btn btn-on-blue"><i class='bx bxs-book-add'></i> Add Course</a>
+        <a href="{{ url_for('manage_announcements') }}" class="btn btn-on-green"><i class='bx bxs-megaphone'></i> Post Announcement</a>
+    </div>
+</section>
+
+<!-- Platform Stats -->
+<div class="stats-grid">
+    <div class="stat-card dash-stat dash-stat--blue">
+        <div class="stat-icon">👥</div>
+        <div class="stat-value">{{ stats.total_users }}</div>
+        <div class="stat-label">Total Users</div>
+    </div>
+    <div class="stat-card dash-stat dash-stat--green">
+        <div class="stat-icon">🧑‍💼</div>
+        <div class="stat-value">{{ stats.total_employees }}</div>
+        <div class="stat-label">Employees</div>
+    </div>
+    <div class="stat-card dash-stat dash-stat--blue">
+        <div class="stat-icon">📚</div>
+        <div class="stat-value">{{ stats.total_courses }}</div>
+        <div class="stat-label">Courses</div>
+    </div>
+    <div class="stat-card dash-stat dash-stat--green">
+        <div class="stat-icon">🎓</div>
+        <div class="stat-value">{{ stats.total_enrollments }}</div>
+        <div class="stat-label">Enrollments</div>
+    </div>
+</div>
+
+<div class="layout-grid" style="display:grid; grid-template-columns: 1.4fr 1fr; gap:1.5rem; align-items:start;">
+    <!-- My Courses -->
+    <div>
+        <h2 class="dash-section-title"><i class='bx bxs-book'></i> My Courses</h2>
+        <div class="card" style="padding:1.25rem;">
+            {% if courses %}
+                {% for c in courses %}
+                <div style="padding:0.85rem 0; border-bottom:1px solid var(--border-light); display:flex; justify-content:space-between; align-items:center; gap:0.5rem;">
+                    <div>
+                        <strong>{{ c.title }}</strong>
+                        <div style="font-size:0.8rem; color:var(--text-muted);">
+                            {{ c.student_count }} learners · {{ c.lesson_count }} lessons · {{ c.discussion_count }} discussions
+                        </div>
+                    </div>
+                    <span class="badge {% if c.is_published %}badge-success{% else %}badge-admin{% endif %}">
+                        {{ 'Published' if c.is_published else 'Draft' }}
+                    </span>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p style="color:var(--text-muted); margin:0;">You haven't created any courses yet.
+                    <a href="{{ url_for('create_course') }}">Create one</a>.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Recent Users -->
+    <div>
+        <h2 class="dash-section-title"><i class='bx bxs-user-plus'></i> Recent Users</h2>
+        <div class="card" style="padding:1.25rem;">
+            {% if recent_users %}
+                {% for u in recent_users %}
+                <div style="padding:0.6rem 0; border-bottom:1px solid var(--border-light); display:flex; justify-content:space-between; gap:0.5rem;">
+                    <span>{{ u.full_name }}</span>
+                    <span class="badge {% if u.role == 'admin' %}badge-admin{% else %}badge-student{% endif %}">{{ u.role|title }}</span>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p style="color:var(--text-muted); margin:0;">No users yet.</p>
+            {% endif %}
+            <a href="{{ url_for('admin_users') }}" class="btn btn-outline btn-sm mt-2">Manage all users</a>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Discussions -->
+<h2 class="dash-section-title"><i class='bx bxs-conversation'></i> Recent Discussions</h2>
+<div class="card" style="padding:1.25rem;">
+    {% if recent_discussions %}
+        {% for d in recent_discussions %}
+        <div style="padding:0.75rem 0; border-bottom:1px solid var(--border-light);">
+            <strong>{{ d.title }}</strong>
+            <div style="font-size:0.82rem; color:var(--text-muted);">
+                {{ d.course_title }} · {{ d.author_name }} · {{ d.reply_count }} replies · {{ d.created_at|timeago }}
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <p style="color:var(--text-muted); margin:0;">No discussions yet.</p>
+    {% endif %}
+</div>
+
+{% endblock %}

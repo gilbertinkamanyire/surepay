@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% block title %}Register{% endblock %}
+{% block body_class %}page-auth{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🎓</div>
+            <h1>Create Account</h1>
+            <p>Join SurePay and start learning today</p>
+        </div>
+        
+        <form method="POST" action="{{ url_for('register') }}">
+            <div class="form-group">
+                <label class="form-label" for="full_name">Full Name *</label>
+                <input type="text" id="full_name" name="full_name" class="form-input" 
+                       placeholder="Enter your full name" required
+                       value="{{ request.form.get('full_name', '') }}">
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="username">Username *</label>
+                    <input type="text" id="username" name="username" class="form-input" 
+                           placeholder="Choose a username" required
+                           value="{{ request.form.get('username', '') }}"
+                           autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="email">Email *</label>
+                    <input type="email" id="email" name="email" class="form-input" 
+                           placeholder="your@email.com" required
+                           value="{{ request.form.get('email', '') }}"
+                           autocomplete="email">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" for="phone">Phone Number</label>
+                <input type="tel" id="phone" name="phone" class="form-input" 
+                       placeholder="+256..." 
+                       value="{{ request.form.get('phone', '') }}">
+            </div>
+            
+
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="password">Password *</label>
+                    <div style="position: relative;">
+                        <input type="password" id="password" name="password" class="form-input" 
+                               placeholder="Min 6 characters" required
+                               autocomplete="new-password" style="padding-right: 40px;">
+                        <button type="button" onclick="var x=document.getElementById('password'); x.type=(x.type==='password'?'text':'password');" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 1.2rem;">
+                            <i class='bx bx-show'></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="confirm_password">Confirm Password *</label>
+                    <div style="position: relative;">
+                        <input type="password" id="confirm_password" name="confirm_password" class="form-input" 
+                               placeholder="Repeat password" required
+                               autocomplete="new-password" style="padding-right: 40px;">
+                        <button type="button" onclick="var x=document.getElementById('confirm_password'); x.type=(x.type==='password'?'text':'password');" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 1.2rem;">
+                            <i class='bx bx-show'></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <button type="submit" class="btn btn-primary btn-block btn-lg mt-1">Create Account</button>
+        </form>
+        
+        <div class="auth-divider">or</div>
+        
+        <p class="text-center" style="font-size: 0.85rem;">
+            Already have an account? 
+            <a href="{{ url_for('login') }}"><strong>Sign in</strong></a>
+        </p>
+    </div>
+</div>
+{% endblock %}

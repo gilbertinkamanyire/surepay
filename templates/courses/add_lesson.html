@@ -1,0 +1,260 @@
+{% extends 'base.html' %}
+{% block title %}Add Lesson{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+    <a href="{{ url_for('dashboard') }}">Dashboard</a>
+    <span class="breadcrumb-sep">›</span>
+    <a href="{{ url_for('course_detail', course_id=course.id) }}">{{ course.title }}</a>
+    <span class="breadcrumb-sep">›</span>
+    <span>Add Lesson</span>
+</div>
+
+<div class="page-header">
+    <h1>📝 Add Training Lesson</h1>
+    <p>Add a lesson to "{{ course.title }}"</p>
+</div>
+
+<!-- AI PDF Generator Panel -->
+<div class="card" style="max-width: 800px; margin-bottom: 1.5rem; border: 2px solid #6200ea; background: linear-gradient(135deg, #f3e8ff 0%, #ede7f6 100%);">
+    <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
+        <div style="font-size: 2rem;">🤖</div>
+        <div>
+            <h3 style="margin: 0; color: #6200ea;">AI Auto-Generator</h3>
+            <p style="margin: 0; font-size: 0.85rem; color: #555;">Upload a PDF and the AI will read it and generate the lesson content & quiz for you to review and edit.</p>
+        </div>
+    </div>
+    <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+        <input type="file" id="ai_pdf_upload" accept=".pdf" style="flex: 1; padding: 0.5rem; border: 1px dashed #9c27b0; border-radius: 8px; background: white;">
+        <button type="button" id="ai_generate_btn" onclick="generateFromPDF()" class="btn btn-primary" style="background: #6200ea; border-color: #6200ea; white-space: nowrap;">
+            <i class='bx bx-brain'></i> Generate with AI
+        </button>
+    </div>
+    <div id="ai_loading" style="display:none; text-align:center; padding: 1.5rem; color: #6200ea; font-weight: bold;">
+        <div style="font-size: 2rem; animation: spin 1s linear infinite; display: inline-block;">⚙️</div>
+        <div style="margin-top: 0.5rem;">AI is reading your PDF and generating content... Please wait.</div>
+    </div>
+    <div id="ai_error" style="display:none; color: #d32f2f; margin-top: 0.5rem; font-weight: bold;"></div>
+</div>
+
+<div class="card" style="max-width: 800px;">
+    <form method="POST" action="{{ url_for('add_lesson', course_id=course.id) }}" enctype="multipart/form-data" id="lessonForm">
+        <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+                <label class="form-label" for="title">Lesson Title *</label>
+                <input type="text" id="title" name="title" class="form-input" 
+                       placeholder="e.g., Introduction to Variables" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="order_num">Order Number</label>
+                <input type="number" id="order_num" name="order_num" class="form-input" 
+                       value="{{ max_order }}" min="0">
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label" for="content">Lesson Content * (HTML supported)</label>
+            <textarea id="content" name="content" class="form-textarea" rows="12" required></textarea>
+        </div>
+        
+        <div class="form-group" style="margin-top: 1rem; padding: 1rem; border: 2px dashed var(--border); border-radius: var(--radius); background: var(--bg-input);">
+            <label class="form-label" for="attachment">📹 Upload Training Video or Resource (Optional)</label>
+            <input type="file" id="attachment" name="attachment" class="form-input"
+                   accept=".mp4,.webm,.mov,.pdf,.zip,.doc,.docx">
+            <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 0.4rem;">
+                Supported video formats: <strong>MP4, WebM, MOV</strong> (up to 100MB). Also accepts PDF, ZIP, Word docs.
+                Videos will display with a built-in player for employees.
+            </div>
+        </div>
+
+        <div class="form-group" style="margin-top: 1rem; padding: 1rem; border: 1px dashed var(--border); border-radius: var(--radius); background: var(--bg-card);">
+            <label class="form-label" for="is_hidden">Visibility</label>
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <input type="checkbox" id="is_hidden" name="is_hidden" value="1">
+                <label for="is_hidden" style="font-weight: 700; cursor: pointer;">Hide from employee view</label>
+            </div>
+        </div>
+
+        <hr style="border: none; border-top: 2px solid var(--accent); margin: 2rem 0; opacity: 0.3;">
+        
+        <div class="section-header">
+            <h3 class="section-title">📊 Required Lesson Assessment</h3>
+            <p class="form-hint" style="margin-bottom: 1rem;">Employees must complete this before they can mark the lesson as done.</p>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label" for="assessment_title">Assessment Title *</label>
+            <input type="text" id="assessment_title" name="assessment_title" class="form-input" 
+                   placeholder="e.g., Progress Check: Introduction" required>
+        </div>
+
+        <div id="questionsContainer" style="margin-top: 1.5rem;">
+            <!-- Initial 5 questions rendered server-side -->
+            {% for i in range(5) %}
+            <div class="quiz-question" id="q_block_{{ i }}" style="border-left: 4px solid var(--accent-surface); margin-bottom: 2rem; background: rgba(0,0,0,0.02); padding: 1rem; border-radius: 0 var(--radius) var(--radius) 0; position: relative;">
+                <div class="quiz-question-num" style="color: var(--accent); font-weight: bold; margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center;">
+                    <span>Question {{ i + 1 }} {% if i == 0 %}(Required){% else %}(Optional){% endif %}</span>
+                    {% if i > 0 %}<button type="button" onclick="removeQuestion(this)" class="btn btn-sm btn-outline" style="color: var(--danger); border-color: var(--danger); padding: 0.2rem 0.5rem; font-size: 0.7rem;">✕ Remove</button>{% endif %}
+                </div>
+                <div class="form-group">
+                    <input type="text" id="q_text_{{ i }}" name="question_{{ i }}" class="form-input" placeholder="Enter question text" {% if i == 0 %}required{% endif %}>
+                </div>
+                <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    {% for o in range(4) %}
+                    <div class="form-group">
+                        <label class="form-label" style="font-size: 0.8rem;">Option {{ 'ABCD'[o] }}</label>
+                        <input type="text" id="opt_{{ i }}_{{ o }}" name="option_{{ i }}_{{ o }}" class="form-input" placeholder="Option {{ 'ABCD'[o] }}" {% if i == 0 %}required{% endif %}>
+                        <label style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.3rem; font-size: 0.75rem; cursor: pointer;">
+                            <input type="radio" id="correct_{{ i }}_{{ o }}" name="correct_{{ i }}" value="{{ o }}" {% if o == 0 %}checked{% endif %}> 
+                            <span>Correct</span>
+                        </label>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Add Question Button -->
+        <div style="margin-bottom: 2rem;">
+            <button type="button" id="addQuestionBtn" onclick="addQuestion()" class="btn btn-outline btn-sm">
+                <i class='bx bx-plus'></i> Add Another Question
+            </button>
+            <span id="questionCount" style="font-size: 0.8rem; color: var(--text-muted); margin-left: 0.75rem;">5 / 100 questions</span>
+        </div>
+
+        <div class="btn-group">
+            <button type="submit" class="btn btn-primary">Add Lesson</button>
+            <a href="{{ url_for('course_detail', course_id=course.id) }}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<style>
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+</style>
+
+<script>
+var _qCount = 5;
+var MAX_QUESTIONS = 100;
+
+function addQuestion() {
+    if (_qCount >= MAX_QUESTIONS) {
+        alert('Maximum of ' + MAX_QUESTIONS + ' questions reached.');
+        return;
+    }
+    var i = _qCount;
+    var container = document.getElementById('questionsContainer');
+    var block = document.createElement('div');
+    block.className = 'quiz-question';
+    block.id = 'q_block_' + i;
+    block.style.cssText = 'border-left: 4px solid var(--accent-surface); margin-bottom: 2rem; background: rgba(0,0,0,0.02); padding: 1rem; border-radius: 0 var(--radius) var(--radius) 0; position: relative;';
+    var opts = ['A','B','C','D'];
+    var optsHtml = opts.map(function(letter, o) {
+        return '<div class="form-group">' +
+            '<label class="form-label" style="font-size:0.8rem;">Option ' + letter + '</label>' +
+            '<input type="text" id="opt_' + i + '_' + o + '" name="option_' + i + '_' + o + '" class="form-input" placeholder="Option ' + letter + '">' +
+            '<label style="display:flex;align-items:center;gap:0.5rem;margin-top:0.3rem;font-size:0.75rem;cursor:pointer;">' +
+            '<input type="radio" id="correct_' + i + '_' + o + '" name="correct_' + i + '" value="' + o + '" ' + (o === 0 ? 'checked' : '') + '>' +
+            '<span>Correct</span></label></div>';
+    }).join('');
+    block.innerHTML =
+        '<div class="quiz-question-num" style="color:var(--accent);font-weight:bold;margin-bottom:0.5rem;display:flex;justify-content:space-between;align-items:center;">' +
+        '<span>Question ' + (i + 1) + ' (Optional)</span>' +
+        '<button type="button" onclick="removeQuestion(this)" class="btn btn-sm btn-outline" style="color:var(--danger);border-color:var(--danger);padding:0.2rem 0.5rem;font-size:0.7rem;">✕ Remove</button></div>' +
+        '<div class="form-group"><input type="text" id="q_text_' + i + '" name="question_' + i + '" class="form-input" placeholder="Enter question text"></div>' +
+        '<div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">' + optsHtml + '</div>';
+    container.appendChild(block);
+    _qCount++;
+    document.getElementById('questionCount').textContent = _qCount + ' / ' + MAX_QUESTIONS + ' questions';
+    if (_qCount >= MAX_QUESTIONS) {
+        document.getElementById('addQuestionBtn').disabled = true;
+        document.getElementById('addQuestionBtn').textContent = 'Max 100 questions reached';
+    }
+    block.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function removeQuestion(btn) {
+    var block = btn.closest('.quiz-question');
+    if (block) {
+        block.remove();
+        _qCount--;
+        document.getElementById('questionCount').textContent = _qCount + ' / ' + MAX_QUESTIONS + ' questions';
+        document.getElementById('addQuestionBtn').disabled = false;
+        document.getElementById('addQuestionBtn').innerHTML = '<i class=\'bx bx-plus\'></i> Add Another Question';
+    }
+}
+
+async function generateFromPDF() {
+    const fileInput = document.getElementById('ai_pdf_upload');
+    if (!fileInput.files[0]) {
+        alert('Please select a PDF file first.');
+        return;
+    }
+
+    document.getElementById('ai_loading').style.display = 'block';
+    document.getElementById('ai_generate_btn').disabled = true;
+    document.getElementById('ai_error').style.display = 'none';
+
+    const formData = new FormData();
+    formData.append('pdf_file', fileInput.files[0]);
+
+    try {
+        const response = await fetch('/api/generate_lesson_from_pdf', {
+            method: 'POST',
+            body: formData
+        });
+
+        const data = await response.json();
+
+        if (data.error) {
+            document.getElementById('ai_error').textContent = 'Error: ' + data.error;
+            document.getElementById('ai_error').style.display = 'block';
+        } else {
+            // Populate the form fields
+            document.getElementById('title').value = data.title || '';
+            document.getElementById('content').value = data.content || '';
+            document.getElementById('assessment_title').value = data.assessment_title || '';
+
+            // Populate quiz questions — add blocks if needed
+            if (data.questions && data.questions.length > 0) {
+                // Ensure enough question blocks exist
+                while (_qCount < data.questions.length && _qCount < MAX_QUESTIONS) { addQuestion(); }
+                data.questions.forEach(function(q, i) {
+                    if (i >= MAX_QUESTIONS) return;
+                    const qInput = document.getElementById('q_text_' + i);
+                    if (qInput) qInput.value = q.question || '';
+
+                    if (q.options) {
+                        q.options.forEach(function(opt, o) {
+                            const optInput = document.getElementById('opt_' + i + '_' + o);
+                            if (optInput) optInput.value = opt || '';
+                        });
+                    }
+
+                    if (q.correct !== undefined) {
+                        const correctRadio = document.getElementById('correct_' + i + '_' + q.correct);
+                        if (correctRadio) correctRadio.checked = true;
+                    }
+                });
+            }
+
+            // Scroll to form
+            document.getElementById('lessonForm').scrollIntoView({ behavior: 'smooth' });
+            
+            // Show success flash
+            const banner = document.createElement('div');
+            banner.style.cssText = 'background:#e8f5e9; border:1px solid #4caf50; padding:0.75rem 1rem; border-radius:8px; margin-bottom:1rem; color:#2e7d32; font-weight:bold;';
+            banner.textContent = '✅ AI has generated content! Please review and edit before saving.';
+            document.getElementById('lessonForm').prepend(banner);
+        }
+    } catch (e) {
+        document.getElementById('ai_error').textContent = 'Network error: ' + e.message;
+        document.getElementById('ai_error').style.display = 'block';
+    }
+
+    document.getElementById('ai_loading').style.display = 'none';
+    document.getElementById('ai_generate_btn').disabled = false;
+}
+</script>
+{% endblock %}

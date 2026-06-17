@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% block title %}{{ assessment.title }}{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+    <a href="{{ url_for('course_detail', course_id=course.id) }}">{{ course.title }}</a>
+    <span class="breadcrumb-sep">›</span>
+    <span>{{ assessment.title }}</span>
+</div>
+
+<div class="page-header">
+    <h1>📝 {{ assessment.title }}</h1>
+    <p>
+        {% if assessment.description %}{{ assessment.description }}{% endif %}
+        {% if assessment.time_limit %} · ⏱ Time limit: {{ assessment.time_limit }} minutes{% endif %}
+        · {{ questions|length }} questions
+    </p>
+</div>
+
+<form method="POST" action="{{ url_for('submit_assessment', course_id=course.id, assessment_id=assessment.id) }}">
+    {% for q in questions %}
+    {% set q_idx = loop.index0 %}
+    <div class="quiz-question">
+        <div class="quiz-question-num">Question {{ loop.index }} of {{ questions|length }}</div>
+        <div class="quiz-question-text">{{ q.question }}</div>
+        
+        {% for opt in q.options %}
+        <label class="quiz-option">
+            <input type="radio" name="q_{{ q_idx }}" value="{{ loop.index0 }}" required>
+            <span>{{ opt }}</span>
+        </label>
+        {% endfor %}
+    </div>
+    {% endfor %}
+    
+    <div class="text-center mt-2">
+        <button type="submit" class="btn btn-primary btn-lg">
+            ✅ Submit Assessment
+        </button>
+    </div>
+</form>
+{% endblock %}
+
+{% block styles %}
+{% if assessment.privacy_mode %}
+<style>
+    .quiz-question-text, .quiz-option {
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+    }
+</style>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}{% endblock %}

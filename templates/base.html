@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <meta name="description" content="SurePay - Lightweight online learning platform optimized for low-bandwidth networks in Uganda">
+    <meta name="theme-color" content="#fffaf5">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>{% block title %}SurePay{% endblock %} | Online Learning Platform</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="manifest" href="{{ url_for('manifest') }}">
+    <!-- Modern Icons -->
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <style>
+        /* Hide Google Translate top banner and widget */
+        .skiptranslate iframe { display: none !important; }
+        body { top: 0px !important; }
+        #google_translate_element { display: none; }
+        /* Dynamic Platform Branding */
+        :root {
+            --brand-primary: {{ platform.primary_color }};
+            --brand-secondary: {{ platform.secondary_color }};
+            /* Map brand colors to core accent variables used in the stylesheet */
+            --accent: var(--brand-primary);
+            --accent-hover: {{ platform.primary_color }};
+            --accent-glow: {{ platform.primary_color }}22;
+            --accent-light: {{ platform.primary_color }}33;
+            --accent-surface: {{ platform.primary_color }}10;
+            --info: var(--brand-primary);
+            --success: var(--brand-secondary);
+        }
+        .navbar { border-bottom: 2px solid {{ platform.primary_color }}10; }
+        .navbar-brand { color: var(--brand-primary) !important; }
+        .btn-primary { background: var(--brand-primary); border-color: var(--brand-primary); }
+        .progress-fill { background: var(--brand-primary); }
+    </style>
+</head>
+<body class="{% block body_class %}{% endblock %} mode-{{ session.get('bandwidth_mode', 'standard') }} mode-{{ session.get('theme_mode', 'light') }}">
+    
+    <!-- Top Utility Bar (Offloads header crowding) -->
+    <div class="top-bar">
+        <div class="container">
+            <div class="top-bar-links">
+                <a href="{{ url_for('how_it_works') }}"><i class='bx bxs-bulb'></i> {{ _('How It Works') }}</a>
+                <a href="{{ url_for('about') }}"><i class='bx bxs-info-circle'></i> {{ _('About') }}</a>
+                <a href="{{ url_for('help_page') }}"><i class='bx bxs-help-circle'></i> {{ _('Support') }}</a>
+            </div>
+            <div class="top-bar-controls">
+                <form action="{{ url_for('toggle_bandwidth') }}" method="POST" style="margin:0; display:inline-block;">
+                    <select name="mode" onchange="this.form.submit()" class="bandwidth-select" title="Bandwidth Guard">
+                        <option value="standard" {% if session.get('bandwidth_mode') == 'standard' %}selected{% endif %}>⚡ 5G / Fiber</option>
+                        <option value="low" {% if session.get('bandwidth_mode') == 'low' %}selected{% endif %}>📶 3G Mode</option>
+                        <option value="ultra" {% if session.get('bandwidth_mode') == 'ultra' %}selected{% endif %}>📟 2G Mode</option>
+                    </select>
+                </form>
+                <form action="{{ url_for('toggle_language') }}" method="POST" style="margin:0; display:inline-block;">
+                    <select name="language" onchange="this.form.submit()" class="bandwidth-select" title="Language Selector">
+                        <option value="en" {% if session.get('language') == 'en' or session.get('language') is none %}selected{% endif %}>English</option>
+                        <option value="lg" {% if session.get('language') == 'lg' %}selected{% endif %}>Luganda</option>
+                        <option value="sw" {% if session.get('language') == 'sw' %}selected{% endif %}>Swahili</option>
+                    </select>
+                </form>
+                <form action="{{ url_for('toggle_theme') }}" method="POST" style="margin:0;">
+                    <button type="submit" class="bandwidth-select" style="padding: 0.2rem 0.5rem !important;" title="Toggle Theme">
+                        {% if session.get('theme_mode') == 'dark' %}
+                            <i class='bx bxs-sun'></i>
+                        {% else %}
+                            <i class='bx bxs-moon'></i>
+                        {% endif %}
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Navigation -->
+    <nav class="navbar" role="navigation" aria-label="Main navigation">
+        <div class="container">
+            <a href="{{ url_for('index') }}" class="navbar-brand">
+                    <img src="{{ platform.logo_url or url_for('static', filename='images/brand_wallet.svg') }}" alt="{{ platform.company_name }} logo" style="height: 36px; width: auto; object-fit: contain; margin-right: 0.5rem; vertical-align: middle;">
+                {{ platform.company_name }}
+            </a>
+            
+            <!-- CSS-only Mobile Menu Toggle -->
+            <input type="checkbox" id="menu-toggle-input" class="menu-toggle-input" hidden>
+            <label for="menu-toggle-input" class="menu-toggle" aria-label="Toggle menu"><i class='bx bx-menu'></i></label>
+            
+            <ul class="navbar-nav">
+                <li><a href="{{ url_for('index') }}" class="{% if request.endpoint == 'index' %}active{% endif %}">Home</a></li>
+                
+                {% if current_user %}
+                    <li><a href="{{ url_for('dashboard') }}" class="{% if request.endpoint == 'dashboard' %}active{% endif %}"><i class='bx bxs-dashboard'></i> Dashboard</a></li>
+                    
+                    <!-- Learning Dropdown -->
+                    <li class="dropdown">
+                        <a href="{{ url_for('courses_list') }}" class="{% if 'course' in (request.endpoint|default('', true)) or request.endpoint in ('cognitive_mirror', 'synergy_connect') %}active{% endif %}">
+                            <i class='bx bxs-graduation'></i> Learning <i class='bx bx-chevron-down'></i>
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a href="{{ url_for('courses_list') }}"><i class='bx bxs-book-open'></i> All Courses</a></li>
+                            {% for dept in nav_departments %}
+                                <li><a href="{{ url_for('courses_list', dept=dept.id) }}" style="padding-left: 2rem; font-size: 0.85rem; opacity: 0.8;">↳ {{ dept.name }}</a></li>
+                            {% endfor %}
+                            {% if current_user and current_user.role == 'employee' %}
+                                <li><a href="{{ url_for('cognitive_mirror') }}"><i class='bx bx-reflect-vertical'></i> Mirror</a></li>
+                                <li><a href="{{ url_for('synergy_connect') }}"><i class='bx bx-group'></i> Synergy</a></li>
+                            {% endif %}
+                            {% if current_user.role == 'employee' %}
+                                <li><a href="{{ url_for('employee_grades') }}"><i class='bx bxs-bar-chart-alt-2'></i> Grades</a></li>
+                            {% endif %}
+                        </ul>
+                    </li>
+
+                    <li><a href="{{ url_for('notifications') }}" class="{% if request.endpoint == 'notifications' %}active{% endif %}"><i class='bx bxs-bell'></i> Alerts</a></li>
+                    
+                    {% if current_user.role == 'admin' %}
+                        <!-- Admin Dropdown -->
+                        <li class="dropdown">
+                            <a href="{{ url_for('manage_announcements') }}" class="btn btn-sm btn-primary text-white">
+                                    <i class='bx bxs-cog'></i> Manage <i class='bx bx-chevron-down'></i>
+                                </a>
+                            <ul class="dropdown-menu">
+                                <li><a href="{{ url_for('manage_announcements') }}">📢 Announce</a></li>
+                                <li><a href="{{ url_for('create_course') }}">📖 Add Course</a></li>
+                                {% if current_user.role == 'admin' %}
+                                    <li><a href="{{ url_for('manage_departments') }}">🏢 Departments</a></li>
+                                    <li><a href="{{ url_for('admin_users') }}">⚙️ Users</a></li>
+                                    <li><a href="{{ url_for('admin_employee_progress') }}">📈 Employee Progress</a></li>
+                                {% endif %}
+                                <hr>
+                                <li><a href="{{ url_for('admin_settings') }}">🎨 Platform Settings</a></li>
+                            </ul>
+                        </li>
+                    {% endif %}
+
+                    <li class="nav-auth-mobile">
+                        <div class="nav-user">
+                            <a href="{{ url_for('profile') }}" style="display: flex; align-items: center; gap: 0.75rem; text-decoration: none;">
+                                {% if current_user.profile_pic_url %}
+                                    <img src="{{ current_user.profile_pic_url }}" alt="avatar" class="nav-avatar">
+                                {% endif %}
+                                <div class="nav-user-info">
+                                    <span class="nav-user-name" style="color: var(--text-primary);">{{ current_user.full_name }}</span>
+                                    <span class="nav-user-role">
+                                        {% if current_user.role == 'employee' %}Employee
+                                        {% elif current_user.role == 'admin' %}Trainer
+                                        {% else %}{{ current_user.role|title }}{% endif %}
+                                    </span>
+                                </div>
+                            </a>
+                            <a href="{{ url_for('logout') }}" class="btn btn-sm btn-outline" title="Logout">Logout</a>
+                        </div>
+                    </li>
+                {% else %}
+                    <li><a href="{{ url_for('login') }}" class="{% if request.endpoint == 'login' %}active{% endif %}">Login</a></li>
+                    <li><a href="{{ url_for('register') }}" class="btn btn-sm btn-primary">Get Started</a></li>
+                {% endif %}
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Flash Messages (JS-Free Dismiss via details/summary hack if needed, or just let them stay) -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flash-container">
+                {% for category, message in messages %}
+                    <div class="flash flash-{{ category }}" role="alert">
+                        <span>{{ message }}</span>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+    <!-- Main Content -->
+    {% set show_sidenav = current_user and request.endpoint not in ('accept_terms',) %}
+    {% if show_sidenav %}
+    <div class="app-shell">
+        <!-- CSS-only toggle for the left side nav (off-canvas drawer on small screens) -->
+        <input type="checkbox" id="sidenav-toggle-input" class="sidenav-toggle-input" hidden>
+        <!-- Secondary (Left) Navigation — dashboard quick links -->
+        <aside class="side-nav" id="side-nav" aria-label="Dashboard navigation">
+            <div class="side-nav-inner">
+                <div class="side-nav-heading">
+                    <span>{% if current_user.role == 'admin' %}Admin Panel{% else %}My Workspace{% endif %}</span>
+                    <label for="sidenav-toggle-input" class="side-nav-close" aria-label="Close menu"><i class='bx bx-x'></i></label>
+                </div>
+                {% if current_user.role == 'admin' %}
+                    <a href="{{ url_for('dashboard') }}" class="side-nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}"><i class='bx bxs-dashboard'></i> Overview</a>
+                    <a href="{{ url_for('manage_announcements') }}" class="side-nav-link {% if request.endpoint == 'manage_announcements' %}active{% endif %}"><i class='bx bxs-megaphone'></i> Announcements</a>
+                    <a href="{{ url_for('admin_users') }}" class="side-nav-link {% if request.endpoint == 'admin_users' %}active{% endif %}"><i class='bx bxs-user-detail'></i> Manage Users</a>
+                    <a href="{{ url_for('manage_departments') }}" class="side-nav-link {% if request.endpoint == 'manage_departments' %}active{% endif %}"><i class='bx bxs-business'></i> Departments</a>
+                    <a href="{{ url_for('admin_analytics') }}" class="side-nav-link {% if request.endpoint == 'admin_analytics' %}active{% endif %}"><i class='bx bxs-bar-chart-square'></i> Analytics</a>
+                    <a href="{{ url_for('admin_employee_progress') }}" class="side-nav-link {% if request.endpoint == 'admin_employee_progress' %}active{% endif %}"><i class='bx bxs-report'></i> Employee Progress</a>
+                    <div class="side-nav-divider"></div>
+                    <a href="{{ url_for('admin_settings') }}" class="side-nav-link {% if request.endpoint == 'admin_settings' %}active{% endif %}"><i class='bx bxs-cog'></i> Platform Settings</a>
+                    <a href="{{ url_for('terms') }}" class="side-nav-link {% if request.endpoint == 'terms' %}active{% endif %}"><i class='bx bxs-file'></i> Terms &amp; Conditions</a>
+                {% else %}
+                    <a href="{{ url_for('dashboard') }}" class="side-nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}"><i class='bx bxs-home-circle'></i> Overview</a>
+                    <a href="{{ url_for('courses_list') }}" class="side-nav-link {% if 'course' in (request.endpoint|default('', true)) %}active{% endif %}"><i class='bx bxs-book-open'></i> My Courses</a>
+                    <a href="{{ url_for('employee_grades') }}" class="side-nav-link {% if request.endpoint == 'employee_grades' %}active{% endif %}"><i class='bx bxs-bar-chart-alt-2'></i> My Grades</a>
+                    <a href="{{ url_for('cognitive_mirror') }}" class="side-nav-link {% if request.endpoint == 'cognitive_mirror' %}active{% endif %}"><i class='bx bx-reflect-vertical'></i> Cognitive Mirror</a>
+                    <a href="{{ url_for('synergy_connect') }}" class="side-nav-link {% if request.endpoint == 'synergy_connect' %}active{% endif %}"><i class='bx bx-group'></i> Synergy Connect</a>
+                    <a href="{{ url_for('notifications') }}" class="side-nav-link {% if request.endpoint == 'notifications' %}active{% endif %}"><i class='bx bxs-bell'></i> Alerts</a>
+                    <div class="side-nav-divider"></div>
+                    <a href="{{ url_for('profile') }}" class="side-nav-link {% if request.endpoint == 'profile' %}active{% endif %}"><i class='bx bxs-user'></i> My Profile</a>
+                    <a href="{{ url_for('terms') }}" class="side-nav-link {% if request.endpoint == 'terms' %}active{% endif %}"><i class='bx bxs-file'></i> Terms &amp; Conditions</a>
+                {% endif %}
+                <div class="side-nav-divider"></div>
+                <a href="{{ url_for('logout') }}" class="side-nav-link side-nav-logout"><i class='bx bx-log-out'></i> Logout</a>
+            </div>
+        </aside>
+
+        <!-- Backdrop: tap outside the drawer to close it (small screens only) -->
+        <label for="sidenav-toggle-input" class="sidenav-overlay" aria-hidden="true"></label>
+
+        <main class="page-wrapper page-wrapper--app">
+            <div class="sidenav-toggle-bar">
+                <label for="sidenav-toggle-input" class="sidenav-toggle" role="button" tabindex="0" aria-controls="side-nav" aria-label="Toggle menu">
+                    <i class='bx bx-menu'></i> <span>Menu</span>
+                </label>
+            </div>
+            <div class="container container--app">
+    {% else %}
+    <main class="page-wrapper">
+        <div class="container">
+    {% endif %}
+            {% block content %}{% endblock %}
+    {% if show_sidenav %}
+            </div>
+        </main>
+    </div>
+    {% else %}
+        </div>
+    </main>
+    {% endif %}
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-text">
+                    &copy; 2026 SurePay Online Learning Platform (Commit: edd0bed)<br>
+                    <small>High-Efficiency Education for Low-Bandwidth Networks</small>
+                    <div style="margin-top:0.5rem; font-size:0.85rem; color:var(--text-muted);">Design: <strong>Tinka</strong></div>
+                    <div style="margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                        <form action="{{ url_for('toggle_language') }}" method="POST">
+                            <input type="hidden" name="language" value="en">
+                            <button type="submit" class="btn btn-sm {% if current_lang == 'en' %}btn-primary text-white{% else %}btn-outline{% endif %}">🇬🇧 EN</button>
+                        </form>
+                        <form action="{{ url_for('toggle_language') }}" method="POST">
+                            <input type="hidden" name="language" value="sw">
+                            <button type="submit" class="btn btn-sm {% if current_lang == 'sw' %}btn-primary text-white{% else %}btn-outline{% endif %}">🇹🇿 Kiswahili</button>
+                        </form>
+                        <form action="{{ url_for('toggle_language') }}" method="POST">
+                            <input type="hidden" name="language" value="lg">
+                            <button type="submit" class="btn btn-sm {% if current_lang == 'lg' %}btn-primary text-white{% else %}btn-outline{% endif %}">🇺🇬 Luganda</button>
+                        </form>
+                    </div>
+                </div>
+                <div class="footer-links">
+                    <a href="{{ url_for('about') }}">{{ _('About') }} SurePay</a>
+                    <a href="{{ url_for('how_it_works') }}">{{ _('How It Works') }}</a>
+                    <a href="{{ url_for('help_page') }}" class="btn btn-sm btn-primary text-white" style="margin-top: -5px;">{{ _('Support') }}</a>
+                    <a href="{{ url_for('terms') }}">Terms</a>
+                    <a href="{{ url_for('privacy') }}">Privacy</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Google Translate Script (Hidden) -->
+    <div id="google_translate_element"></div>
+    <script type="text/javascript">
+        function googleTranslateElementInit() {
+            new google.translate.TranslateElement({
+                pageLanguage: 'en', 
+                includedLanguages: 'en,sw,lg', 
+                autoDisplay: false
+            }, 'google_translate_element');
+        }
+    </script>
+    <script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+
+    <!-- Back to Top Button -->
+    <button id="backToTop" class="back-to-top" aria-label="Back to top" title="Back to top">
+        <i class='bx bxs-up-arrow-alt'></i>
+    </button>
+
+    {% block scripts %}{% endblock %}
+    <script>
+        // Back to Top functionality
+        const backToTopBtn = document.getElementById('backToTop');
+        
+        window.addEventListener('scroll', () => {
+            if (window.pageYOffset > 300) {
+                backToTopBtn.classList.add('visible');
+            } else {
+                backToTopBtn.classList.remove('visible');
+            }
+        });
+
+        backToTopBtn.addEventListener('click', () => {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        });
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js').then(function(reg) {
+                    console.log('Service worker registered:', reg.scope);
+                }).catch(function(err) {
+                    console.warn('Service worker registration failed:', err);
+                });
+            });
+        }
+
+        function sharePage(title) {
+            const shareData = {
+                title: title,
+                text: title + ' - SurePay',
+                url: window.location.href
+            };
+            if (navigator.share) {
+                navigator.share(shareData).catch(() => {});
+            } else {
+                const whatsappLink = 'https://wa.me/?text=' + encodeURIComponent(shareData.text + ' ' + shareData.url);
+                window.open(whatsappLink, '_blank');
+            }
+        }
+    </script>
+</body>
+</html>

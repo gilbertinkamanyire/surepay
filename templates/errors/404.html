@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block title %}Page Not Found{% endblock %}
+
+{% block content %}
+<div class="empty-state" style="padding: 5rem 1rem;">
+    <div class="empty-state-icon">🔍</div>
+    <h1 style="font-size: 4rem; font-weight: 900; color: var(--accent); margin-bottom: 0.5rem;">404</h1>
+    <div class="empty-state-title">Page Not Found</div>
+    <div class="empty-state-desc">The page you are looking for doesn't exist or has been moved.</div>
+    <div class="btn-group" style="justify-content: center;">
+        <a href="{{ url_for('index') }}" class="btn btn-primary">🏠 Go Home</a>
+        <a href="{{ request.referrer or url_for('index') }}" class="btn btn-secondary">← Go Back</a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}New Discussion{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+    <a href="{{ url_for('course_detail', course_id=course.id) }}">{{ course.title }}</a>
+    <span class="breadcrumb-sep">›</span>
+    <a href="{{ url_for('discussions_list', course_id=course.id) }}">Discussions</a>
+    <span class="breadcrumb-sep">›</span>
+    <span>New Discussion</span>
+</div>
+
+<div class="page-header">
+    <h1>💬 Start a Discussion</h1>
+    <p>{{ course.title }}</p>
+</div>
+
+<div class="card" style="max-width: 700px;">
+    <form method="POST" action="{{ url_for('create_discussion', course_id=course.id) }}">
+        <div class="form-group">
+            <label class="form-label" for="title">Topic Title *</label>
+            <input type="text" id="title" name="title" class="form-input" 
+                   placeholder="What would you like to discuss?" required>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label" for="content">Your Message *</label>
+            <textarea id="content" name="content" class="form-textarea" rows="6"
+                      placeholder="Share your thoughts, ask questions, or start a conversation..." required></textarea>
+        </div>
+        
+        <div class="btn-group">
+            <button type="submit" class="btn btn-primary">Post Discussion</button>
+            <a href="{{ url_for('discussions_list', course_id=course.id) }}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

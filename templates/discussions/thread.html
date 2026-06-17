@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% block title %}{{ discussion.title }}{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+    <a href="{{ url_for('course_detail', course_id=course.id) }}">{{ course.title }}</a>
+    <span class="breadcrumb-sep">›</span>
+    <a href="{{ url_for('discussions_list', course_id=course.id) }}">Discussions</a>
+    <span class="breadcrumb-sep">›</span>
+    <span>{{ discussion.title }}</span>
+</div>
+
+<!-- Original Post -->
+<div class="card mb-2">
+    <div class="flex gap-2">
+        <div class="reply-avatar" style="width: 40px; height: 40px; font-size: 0.9rem;">
+            {{ discussion.author_name[0] }}
+        </div>
+        <div style="flex: 1;">
+            <div style="font-weight: 700; font-size: 1.1rem; margin-bottom: 0.25rem;">{{ discussion.title }}</div>
+            <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+                {{ discussion.author_name }} · {{ discussion.created_at|timeago }}
+            </div>
+            <div style="color: var(--text-secondary); line-height: 1.7;">
+                {{ discussion.content }}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Replies -->
+<div class="section-header">
+    <h2 class="section-title">💬 Replies ({{ replies|length }})</h2>
+</div>
+
+{% if replies %}
+<div class="card">
+    {% for r in replies %}
+    <div class="reply-item">
+        <div class="reply-avatar">{{ r.author_name[0] }}</div>
+        <div class="reply-content">
+            <div class="flex gap-1" style="align-items: center;">
+                <span class="reply-author">{{ r.author_name }}</span>
+                {% if r.author_role == 'admin' %}
+                    <span class="badge badge-admin" style="font-size: 0.6rem;">Trainer</span>
+                {% endif %}
+                <span class="reply-time">· {{ r.created_at|timeago }}</span>
+            </div>
+            <div class="reply-text">{{ r.content }}</div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card text-center" style="padding: 2rem;">
+    <p>No replies yet. Be the first to respond!</p>
+</div>
+{% endif %}
+
+<!-- Reply Form -->
+<div class="card mt-2">
+    <h3 style="font-size: 0.95rem; margin-bottom: 0.75rem;">✍️ Write a Reply</h3>
+    <form method="POST" action="{{ url_for('reply_discussion', course_id=course.id, discussion_id=discussion.id) }}">
+        <div class="form-group">
+            <textarea name="content" class="form-textarea" rows="3" placeholder="Write your reply here..." required></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Post Reply</button>
+    </form>
+</div>
+{% endblock %}

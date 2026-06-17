@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block title %}Server Error{% endblock %}
+
+{% block content %}
+<div class="empty-state" style="padding: 5rem 1rem;">
+    <div class="empty-state-icon">⚠️</div>
+    <h1 style="font-size: 4rem; font-weight: 900; color: var(--warning); margin-bottom: 0.5rem;">500</h1>
+    <div class="empty-state-title">Something Went Wrong</div>
+    <div class="empty-state-desc">We encountered an unexpected error. Please try again later.</div>
+    <div class="btn-group" style="justify-content: center;">
+        <a href="{{ url_for('index') }}" class="btn btn-primary">🏠 Go Home</a>
+        <a href="{{ request.path }}" class="btn btn-secondary">🔄 Retry</a>
+    </div>
+</div>
+{% endblock %}
