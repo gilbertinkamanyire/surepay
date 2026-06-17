@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 160" width="800" height="160">
+  <defs>
+    <style>
+      .title { font-family: Montserrat, sans-serif; font-weight: 700; font-size: 72px; }
+    </style>
+  </defs>
+  <!-- Left icon (wallet) -->
+  <g transform="translate(12,12) scale(0.8)">
+    <rect x="16" y="16" width="120" height="48" rx="12" fill="#312783" />
+    <rect x="36" y="0" width="36" height="14" rx="4" fill="#95c01f" />
+    <path d="M76 64c-36 0-68 32-68 64h136c0-32-32-64-68-64z" fill="#95c01f" />
+    <path d="M98 96l10 8 20-28" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" />
+  </g>
+  <!-- Text -->
+  <g transform="translate(170,110)">
+    <text class="title" fill="#312783">SURE</text>
+    <text class="title" x="180" fill="#111111">Pay</text>
+  </g>
+</svg>

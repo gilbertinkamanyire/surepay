@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <rect x="16" y="16" width="224" height="96" rx="18" fill="#312783" />
+  <rect x="28" y="0" width="80" height="36" rx="8" fill="#95c01f" />
+  <path d="M128 112c-60 0-112 48-112 104h224c0-56-52-104-112-104z" fill="#95c01f" />
+  <path d="M76 168c6 6 36 34 36 34s64-54 86-86c0 0-40 34-74 70-2 2-10 3-14-1-34-32-50-54-50-54z" fill="#ffffff" opacity="0.95" />
+  <!-- simple white check/mark -->
+  <path d="M88 184l22 18 56-68" fill="none" stroke="#ffffff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" />
+</svg>

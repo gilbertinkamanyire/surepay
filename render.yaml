@@ -1,0 +1,51 @@
+# Render Blueprint for SurePay Learn
+# -----------------------------------
+# Provisions a managed PostgreSQL database and the web service, and wires
+# DATABASE_URL + a generated SECRET_KEY automatically so application data
+# PERSISTS across deploys (no more resets).
+#
+# Apply: Render Dashboard -> New + -> Blueprint -> pick this repo.
+# The app auto-detects DATABASE_URL and creates its schema on first boot
+# (see db_compat.py / models.py), so no manual DB setup is needed.
+
+databases:
+  - name: surepay-db
+    databaseName: surepay
+    user: surepay
+    plan: free          # upgrade to a paid plan to avoid the ~90-day free-DB expiry
+
+services:
+  - type: web
+    name: surepay
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT
+    healthCheckPath: /
+    envVars:
+      # Postgres connection string, injected from the database above.
+      # Its presence is what makes the app use PostgreSQL instead of SQLite.
+      - key: DATABASE_URL
+        fromDatabase:
+          name: surepay-db
+          property: connectionString
+      # Strong random session key (generated once, then kept stable by Render).
+      - key: SECRET_KEY
+        generateValue: true
+      - key: PYTHON_VERSION
+        value: "3.11.9"
+      # Optional email (Mailjet). Set real values in the dashboard to enable.
+      - key: MAILJET_API_KEY
+        sync: false
+      - key: MAILJET_API_SECRET
+        sync: false
+      - key: MAILJET_SENDER_EMAIL
+        sync: false
+
+    # OPTIONAL — persist uploaded files (logos, lesson attachments) too.
+    # Requires a paid instance type. Uncomment this disk AND add an env var
+    # `RENDER=true` above so config.py writes uploads to /data.
+    # disk:
+    #   name: surepay-data
+    #   mountPath: /data
+    #   sizeGB: 1
