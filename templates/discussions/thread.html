@@ -3,9 +3,9 @@
 
 {% block content %}
 <div class="breadcrumb">
-    <a href="{{ url_for('course_detail', course_id=course.id) }}">{{ course.title }}</a>
+    <a href="{{ url_for('category_detail', category_id=category.id) }}">{{ category.title }}</a>
     <span class="breadcrumb-sep">›</span>
-    <a href="{{ url_for('discussions_list', course_id=course.id) }}">Discussions</a>
+    <a href="{{ url_for('discussions_list', category_id=category.id) }}">Discussions</a>
     <span class="breadcrumb-sep">›</span>
     <span>{{ discussion.title }}</span>
 </div>
@@ -60,7 +60,7 @@
 <!-- Reply Form -->
 <div class="card mt-2">
     <h3 style="font-size: 0.95rem; margin-bottom: 0.75rem;">✍️ Write a Reply</h3>
-    <form method="POST" action="{{ url_for('reply_discussion', course_id=course.id, discussion_id=discussion.id) }}">
+    <form method="POST" action="{{ url_for('reply_discussion', category_id=category.id, discussion_id=discussion.id) }}">
         <div class="form-group">
             <textarea name="content" class="form-textarea" rows="3" placeholder="Write your reply here..." required></textarea>
         </div>

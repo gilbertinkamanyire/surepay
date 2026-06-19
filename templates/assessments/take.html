@@ -3,7 +3,7 @@
 
 {% block content %}
 <div class="breadcrumb">
-    <a href="{{ url_for('course_detail', course_id=course.id) }}">{{ course.title }}</a>
+    <a href="{{ url_for('category_detail', category_id=category.id) }}">{{ category.title }}</a>
     <span class="breadcrumb-sep">›</span>
     <span>{{ assessment.title }}</span>
 </div>
@@ -11,47 +11,176 @@
 <div class="page-header">
     <h1>📝 {{ assessment.title }}</h1>
     <p>
-        {% if assessment.description %}{{ assessment.description }}{% endif %}
-        {% if assessment.time_limit %} · ⏱ Time limit: {{ assessment.time_limit }} minutes{% endif %}
-        · {{ questions|length }} questions
+        {% if assessment.description %}{{ assessment.description }} &middot; {% endif %}
+        {% if assessment.time_limit %}<i class='bx bx-time'></i> {{ assessment.time_limit }} min &middot; {% endif %}
+        <strong>{{ questions|length }} question{% if questions|length != 1 %}s{% endif %}</strong>
+        &middot;
+        <span style="color: var(--secondary-accent); font-weight: 700;">Attempt {{ attempt_count + 1 }} of {{ max_attempts }}</span>
     </p>
 </div>
 
-<form method="POST" action="{{ url_for('submit_assessment', course_id=course.id, assessment_id=assessment.id) }}">
+<!-- Privacy notice -->
+<div class="alert" style="background: rgba(98,0,234,0.08); border-left: 4px solid #6200ea; color: var(--text-primary); margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.75rem;">
+    <i class='bx bxs-lock' style="color:#6200ea; font-size:1.3rem;"></i>
+    <span><strong>High Privacy Mode:</strong> Copy, paste, and right-click are disabled on this assessment. Your answers are recorded.</span>
+</div>
+
+<form method="POST" action="{{ url_for('submit_assessment', category_id=category.id, assessment_id=assessment.id) }}" id="quiz-form" onsubmit="return confirmSubmit()">
     {% for q in questions %}
     {% set q_idx = loop.index0 %}
-    <div class="quiz-question">
-        <div class="quiz-question-num">Question {{ loop.index }} of {{ questions|length }}</div>
-        <div class="quiz-question-text">{{ q.question }}</div>
+    <div class="quiz-question" id="q-block-{{ q_idx }}">
+        <div class="quiz-question-num">Question {{ loop.index }} <span style="color:var(--text-muted); font-weight:400;">of {{ questions|length }}</span></div>
+        <div class="quiz-question-text no-select">{{ loop.index }}. {{ q.question }}</div>
         
-        {% for opt in q.options %}
-        <label class="quiz-option">
-            <input type="radio" name="q_{{ q_idx }}" value="{{ loop.index0 }}" required>
-            <span>{{ opt }}</span>
-        </label>
-        {% endfor %}
+        <div class="quiz-options-column">
+            {% for opt in q.options %}
+            <label class="quiz-option-row no-select">
+                <input type="radio" name="q_{{ q_idx }}" value="{{ loop.index0 }}" required>
+                <span class="option-letter">{{ 'ABCD'[loop.index0] }}.</span>
+                <span class="option-text">{{ opt }}</span>
+            </label>
+            {% endfor %}
+        </div>
     </div>
     {% endfor %}
     
-    <div class="text-center mt-2">
-        <button type="submit" class="btn btn-primary btn-lg">
-            ✅ Submit Assessment
+    <div class="text-center mt-2" style="margin-bottom: 2rem;">
+        <button type="submit" class="btn btn-primary btn-lg" id="submit-btn">
+            ✅ Submit Assessment (Attempt {{ attempt_count + 1 }}/{{ max_attempts }})
         </button>
+        <div style="margin-top: 0.75rem; font-size: 0.82rem; color: var(--text-muted);">
+            {% if max_attempts - attempt_count - 1 > 0 %}
+            You will have <strong>{{ max_attempts - attempt_count - 1 }}</strong> more attempt(s) after this submission.
+            {% else %}
+            ⚠️ This is your <strong>final</strong> attempt. Make sure all answers are filled in before submitting.
+            {% endif %}
+        </div>
     </div>
 </form>
 {% endblock %}
 
 {% block styles %}
-{% if assessment.privacy_mode %}
 <style>
-    .quiz-question-text, .quiz-option {
-        -webkit-user-select: none;
-        -moz-user-select: none;
-        -ms-user-select: none;
-        user-select: none;
+    /* ── High-grade privacy: no selection, copy, context menu ── */
+    .no-select {
+        -webkit-user-select: none !important;
+        -moz-user-select: none !important;
+        -ms-user-select: none !important;
+        user-select: none !important;
+        -webkit-touch-callout: none !important;
+    }
+
+    .quiz-question {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-left: 5px solid var(--accent);
+        border-radius: var(--radius-lg);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .quiz-question-text {
+        font-size: 1.05rem;
+        font-weight: 600;
+        margin-bottom: 1.25rem;
+        line-height: 1.5;
+        color: var(--text-primary);
+    }
+
+    /* Vertical single-column options */
+    .quiz-options-column {
+        display: flex;
+        flex-direction: column;
+        gap: 0.6rem;
+    }
+
+    .quiz-option-row {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        padding: 0.75rem 1rem;
+        border: 1.5px solid var(--border);
+        border-radius: var(--radius);
+        cursor: pointer;
+        transition: border-color 0.15s, background 0.15s;
+        background: var(--bg-input);
+    }
+
+    .quiz-option-row:hover {
+        border-color: var(--accent);
+        background: var(--accent-surface);
+    }
+
+    .quiz-option-row input[type="radio"] {
+        flex-shrink: 0;
+        width: 18px;
+        height: 18px;
+        accent-color: var(--accent);
+    }
+
+    .quiz-option-row input[type="radio"]:checked ~ .option-letter,
+    .quiz-option-row:has(input:checked) {
+        border-color: var(--accent);
+        background: var(--accent-surface);
+    }
+
+    .option-letter {
+        font-weight: 700;
+        color: var(--accent);
+        font-size: 0.95rem;
+        min-width: 22px;
+    }
+
+    .option-text {
+        color: var(--text-primary);
+        font-size: 0.95rem;
+    }
+
+    /* Block right-click visual cue */
+    .quiz-question-text::selection,
+    .quiz-option-row::selection {
+        background: transparent;
     }
 </style>
-{% endif %}
 {% endblock %}
 
-{% block scripts %}{% endblock %}
+{% block scripts %}
+<script>
+    // ── High-grade copy/paste/contextmenu prevention ──
+    const quizForm = document.getElementById('quiz-form');
+    if (quizForm) {
+        quizForm.addEventListener('copy', function(e) { e.preventDefault(); return false; });
+        quizForm.addEventListener('cut', function(e) { e.preventDefault(); return false; });
+        quizForm.addEventListener('paste', function(e) { e.preventDefault(); return false; });
+        quizForm.addEventListener('contextmenu', function(e) { e.preventDefault(); return false; });
+        quizForm.addEventListener('dragstart', function(e) { e.preventDefault(); return false; });
+    }
+    // Also block on document level for entire quiz page
+    document.addEventListener('copy', function(e) { if (e.target.closest('#quiz-form')) { e.preventDefault(); } });
+    document.addEventListener('contextmenu', function(e) { if (e.target.closest('#quiz-form')) { e.preventDefault(); } });
+    document.addEventListener('keydown', function(e) {
+        // Block Ctrl+C, Ctrl+X, Ctrl+V, Ctrl+P, Ctrl+U (view source)
+        if (e.ctrlKey && ['c','x','v','p','u','a'].includes(e.key.toLowerCase()) && e.target.closest('#quiz-form')) {
+            e.preventDefault();
+            return false;
+        }
+    });
+
+    function confirmSubmit() {
+        const radios = document.querySelectorAll('#quiz-form .quiz-options-column');
+        let allAnswered = true;
+        radios.forEach(function(group, idx) {
+            const checked = group.querySelector('input[type="radio"]:checked');
+            if (!checked) {
+                allAnswered = false;
+                group.closest('.quiz-question').style.borderLeftColor = 'var(--danger)';
+            }
+        });
+        if (!allAnswered) {
+            alert('Please answer all questions before submitting.');
+            return false;
+        }
+        return confirm('Are you sure you want to submit this assessment? This will count as one of your attempts.');
+    }
+</script>
+{% endblock %}

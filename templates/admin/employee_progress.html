@@ -6,7 +6,7 @@
 <div class="page-header" style="flex-direction: row; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
     <div>
         <h1>📊 Employee Training Progress</h1>
-        <p>Monitor course completion and learning adoption across all employees</p>
+        <p>Monitor category completion and learning adoption across all employees</p>
     </div>
     <a href="{{ url_for('admin_settings') }}" class="btn btn-outline btn-sm">⚙️ Platform Settings</a>
 </div>
@@ -48,17 +48,17 @@
                 <input type="text" name="search" class="form-input" placeholder="Name or email..." value="{{ search }}">
             </div>
             <div style="min-width: 160px;">
-                <label class="form-label" style="font-size: 0.8rem;">🏢 Business System</label>
-                <select name="dept" class="form-input">
-                    <option value="">All Systems</option>
-                    {% for dept in departments %}
-                        <option value="{{ dept.id }}" {% if dept_filter == dept.id %}selected{% endif %}>{{ dept.name }}</option>
+                <label class="form-label" style="font-size: 0.8rem;">🏢 Business system</label>
+                <select name="cat" class="form-input">
+                    <option value="">All systems</option>
+                    {% for cat in systems %}
+                        <option value="{{ cat.id }}" {% if cat_filter == cat.id %}selected{% endif %}>{{ cat.name }}</option>
                     {% endfor %}
                 </select>
             </div>
             <div>
                 <button type="submit" class="btn btn-primary">Filter</button>
-                {% if search or dept_filter %}
+                {% if search or cat_filter %}
                     <a href="{{ url_for('admin_employee_progress') }}" class="btn btn-outline" style="margin-left: 0.5rem;">Clear</a>
                 {% endif %}
             </div>
@@ -73,8 +73,8 @@
         <thead>
             <tr>
                 <th>Employee</th>
-                <th>Business System</th>
-                <th>Course / Module</th>
+                <th>Business system</th>
+                <th>category / Module</th>
                 <th style="width: 180px;">Progress</th>
                 <th>Status</th>
                 <th>Enrolled</th>
@@ -104,7 +104,7 @@
                         <span style="color: var(--text-muted); font-size: 0.8rem;">—</span>
                     {% endif %}
                 </td>
-                <td style="font-size: 0.85rem;">{{ r.course_title }}</td>
+                <td style="font-size: 0.85rem;">{{ r.category_title }}</td>
                 <td>
                     <div style="display: flex; align-items: center; gap: 0.5rem;">
                         <div style="flex: 1; background: var(--bg-input); border-radius: 4px; height: 8px; overflow: hidden;">
@@ -143,10 +143,10 @@
     <div class="empty-state-icon">📊</div>
     <div class="empty-state-title">No Enrollment Records</div>
     <div class="empty-state-desc">
-        {% if search or dept_filter %}
+        {% if search or cat_filter %}
             No employees match your filter criteria.
         {% else %}
-            No employees are enrolled in any courses yet.
+            No employees are enrolled in any categories yet.
         {% endif %}
     </div>
 </div>

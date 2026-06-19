@@ -95,6 +95,40 @@
                 </div>
             </div>
 
+            <!-- Public Pages (Markdown) -->
+            <div class="card mb-3" style="padding: 1.5rem;">
+                <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <i class='bx bx-book-open'></i> Public Pages Content
+                </h3>
+                <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 1rem;">
+                    Markdown formatting is supported for all these pages (HTML is disabled).
+                </p>
+
+                <div class="form-group mb-2">
+                    <label class="form-label" for="privacy_content">Privacy Policy</label>
+                    <textarea id="privacy_content" name="privacy_content" class="form-input" rows="6"
+                              placeholder="Enter privacy policy (Markdown)...">{{ current_settings.get('privacy_content', '') }}</textarea>
+                </div>
+
+                <div class="form-group mb-2">
+                    <label class="form-label" for="about_content">About Us</label>
+                    <textarea id="about_content" name="about_content" class="form-input" rows="6"
+                              placeholder="Enter about us content (Markdown)...">{{ current_settings.get('about_content', '') }}</textarea>
+                </div>
+
+                <div class="form-group mb-2">
+                    <label class="form-label" for="help_content">Help Page</label>
+                    <textarea id="help_content" name="help_content" class="form-input" rows="6"
+                              placeholder="Enter help center content (Markdown)...">{{ current_settings.get('help_content', '') }}</textarea>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="how_it_works_content">How It Works</label>
+                    <textarea id="how_it_works_content" name="how_it_works_content" class="form-input" rows="6"
+                              placeholder="Enter how it works content (Markdown)...">{{ current_settings.get('how_it_works_content', '') }}</textarea>
+                </div>
+            </div>
+
             <button type="submit" class="btn btn-primary btn-lg" style="width: 100%;">
                 <i class='bx bxs-save'></i> Save Settings
             </button>

@@ -37,7 +37,7 @@ def send_notification_email(subject, text_part, html_part, notify_roles=None, sp
       'Messages': [
         {
           "From": {"Email": sender_email, "Name": "SurePay Notifications"},
-          "To": [{"Email": sender_email, "Name": "SurePay System"}],
+          "To": [{"Email": sender_email, "Name": "SurePay system"}],
           "Bcc": bcc_list,
           "Subject": subject,
           "TextPart": text_part,

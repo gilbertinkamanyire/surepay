@@ -3,7 +3,7 @@ const ASSETS_TO_CACHE = [
   '/',
   '/static/css/style.css',
   '/manifest.json',
-  '/courses',
+  '/categories',
   '/dashboard',
   '/login',
   '/register',

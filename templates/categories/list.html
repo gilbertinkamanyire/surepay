@@ -1,0 +1,135 @@
+{% extends 'base.html' %}
+{% block title %}Browse Training categories{% endblock %}
+{% block body_class %}page-categories{% endblock %}
+
+{% block content %}
+<div class="page-header" style="flex-direction: row; justify-content: space-between; align-items: center;">
+    <div>
+        <h1>🎓 Training categories</h1>
+        <p>Select a system to browse its categories</p>
+    </div>
+    {% if session.role == 'admin' %}
+        <a href="{{ url_for('create_category', cat_id=current_cat) }}" class="btn btn-primary">+ Add category</a>
+    {% endif %}
+</div>
+
+<!-- system Selector -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+    {% for cat in systems %}
+    <a href="{{ url_for('categories_list', cat=cat.id) }}" style="text-decoration: none;">
+        <div style="padding: 1.25rem 0.75rem; border-radius: var(--radius-lg); text-align: center; border: 2px solid {% if current_cat == cat.id %}var(--accent){% else %}var(--border){% endif %}; background: {% if current_cat == cat.id %}var(--accent-surface){% else %}var(--bg-card){% endif %}; transition: all 0.25s; cursor: pointer;"
+             onmouseover="this.style.borderColor='var(--accent)'; this.style.transform='translateY(-2px)';"
+             onmouseout="this.style.borderColor='{% if current_cat == cat.id %}var(--accent){% else %}var(--border){% endif %}'; this.style.transform='';">
+            <div style="font-size: 1.75rem; margin-bottom: 0.35rem;">
+                {% if cat.name == 'SIMS' %}🎓
+                {% elif cat.name == 'CMS' %}📋
+                {% elif cat.name == 'PMS' %}📊
+                {% elif cat.name == 'Core Banking' %}🏦
+                {% else %}💼{% endif %}
+            </div>
+            <div style="font-size: 0.78rem; font-weight: 700; color: var(--text-primary);">{{ cat.name }}</div>
+        </div>
+    </a>
+    {% endfor %}
+</div>
+
+{% if current_cat %}
+<!-- Active system Label + Search -->
+<div style="margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+    <span style="font-size: 0.85rem; color: var(--text-muted);">Showing categories for:</span>
+    {% for cat in systems %}
+        {% if cat.id == current_cat %}
+        <span class="badge badge-info" style="font-size: 0.8rem;">
+            {% if cat.name == 'SIMS' %}🎓{% elif cat.name == 'CMS' %}📋{% elif cat.name == 'PMS' %}📊{% elif cat.name == 'Core Banking' %}🏦{% else %}💼{% endif %}
+            {{ cat.name }}
+        </span>
+        {% endif %}
+    {% endfor %}
+    <a href="{{ url_for('categories_list') }}" style="font-size: 0.8rem; color: var(--text-muted);">✕ Clear</a>
+</div>
+
+<form method="GET" action="{{ url_for('categories_list') }}" style="margin-bottom: 1.5rem;">
+    <input type="hidden" name="cat" value="{{ current_cat }}">
+    <div class="search-bar">
+        <input type="text" name="search" class="form-input" placeholder="🔍 Search categories in this system..." value="{{ search }}">
+        <button type="submit" class="btn btn-primary">Search</button>
+        {% if search %}
+        <a href="{{ url_for('categories_list', cat=current_cat) }}" class="btn btn-secondary">Clear Search</a>
+        {% endif %}
+    </div>
+</form>
+
+<!-- category Grid -->
+{% if categories %}
+<div class="category-grid">
+    {% for category in categories %}
+    <a href="{{ url_for('category_detail', category_id=category.id) }}" class="category-card" style="text-decoration: none; color: inherit;">
+        <div class="category-card-image" {% if category.image_url %}style="background-image: linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.2)), url('{{ category.image_url }}'); background-size: cover; background-position: center;"{% endif %}>
+            <span class="category-card-category">{{ category.system_name }}</span>
+            {% if not category.image_url %}
+            <span class="category-card-icon">
+                {% if category.system_name == 'SIMS' %}🎓
+                {% elif category.system_name == 'CMS' %}📋
+                {% elif category.system_name == 'PMS' %}📊
+                {% elif category.system_name == 'Core Banking' %}🏦
+                {% else %}📚{% endif %}
+            </span>
+            {% endif %}
+        </div>
+        <div class="category-card-body">
+            <div class="category-card-title">{{ category.title }}</div>
+            <div class="category-card-desc">{{ (category.description or '')[:120] }}{% if category.description and category.description|length > 120 %}...{% endif %}</div>
+            <div class="category-card-meta">
+                <span>👤 {{ category.admin_name }}</span>
+                <span>📖 {{ category.lesson_count }} lessons</span>
+                <span>👥 {{ category.student_count }} enrolled</span>
+            </div>
+        </div>
+    </a>
+    {% endfor %}
+</div>
+
+<!-- Pagination -->
+{% if total_pages > 1 %}
+<div class="pagination">
+    {% if page > 1 %}
+        <a href="{{ url_for('categories_list', page=page-1, search=search, cat=current_cat) }}">← Prev</a>
+    {% else %}
+        <span class="disabled">← Prev</span>
+    {% endif %}
+    {% for p in range(1, total_pages + 1) %}
+        {% if p == page %}
+            <span class="active">{{ p }}</span>
+        {% else %}
+            <a href="{{ url_for('categories_list', page=p, search=search, cat=current_cat) }}">{{ p }}</a>
+        {% endif %}
+    {% endfor %}
+    {% if page < total_pages %}
+        <a href="{{ url_for('categories_list', page=page+1, search=search, cat=current_cat) }}">Next →</a>
+    {% else %}
+        <span class="disabled">Next →</span>
+    {% endif %}
+</div>
+{% endif %}
+
+{% else %}
+<div class="empty-state">
+    <div class="empty-state-icon">🔍</div>
+    <div class="empty-state-title">No categories Found</div>
+    <div class="empty-state-desc">
+        {% if search %}No categories match "{{ search }}". Try a different search term.
+        {% else %}No categories available in this system yet. Check back soon!{% endif %}
+    </div>
+</div>
+{% endif %}
+
+{% else %}
+<!-- No system selected — prompt to pick one -->
+<div class="empty-state" style="padding: 4rem 2rem;">
+    <div class="empty-state-icon">👆</div>
+    <div class="empty-state-title">Select a system</div>
+    <div class="empty-state-desc">Choose a system above to see its available categories.</div>
+</div>
+{% endif %}
+
+{% endblock %}

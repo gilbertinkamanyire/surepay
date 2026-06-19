@@ -50,7 +50,7 @@
     <div class="hero-actions">
         {% if current_user %}
             <a href="{{ url_for('dashboard') }}" class="btn btn-lg btn-primary">🚀 Go to Dashboard</a>
-            <a href="{{ url_for('courses_list') }}" class="btn btn-lg btn-secondary">📖 Browse Training</a>
+            <a href="{{ url_for('categories_list') }}" class="btn btn-lg btn-secondary">📖 Browse Training</a>
         {% else %}
             <a href="{{ url_for('login') }}" class="btn btn-lg btn-primary">🔐 Sign In</a>
             <a href="{{ url_for('register') }}" class="btn btn-lg btn-secondary">Join Now</a>
@@ -58,27 +58,27 @@
     </div>
 </section>
 
-<!-- Business System Quick Select -->
+<!-- Business system Quick Select -->
 <section class="mt-4">
     <div style="text-align: center; margin-bottom: 2rem;">
-        <h2 style="font-size: 1.8rem; font-weight: 900;">Select Your Business System</h2>
+        <h2 style="font-size: 1.8rem; font-weight: 900;">Select Your Business system</h2>
         <p style="color: var(--text-secondary); max-width: 480px; margin: 0.5rem auto 0; font-weight: 500;">Choose the system you need to learn and access targeted training modules instantly.</p>
     </div>
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
-        {% for dept in nav_departments %}
-        <a href="{{ url_for('courses_list', dept=dept.id) }}" style="text-decoration: none;">
+        {% for cat in nav_systems %}
+        <a href="{{ url_for('categories_list', cat=cat.id) }}" style="text-decoration: none;">
             <div style="padding: 2rem 1.5rem; background: var(--bg-card); border-radius: var(--radius-xl); border: 1px solid var(--border); text-align: center; transition: all 0.35s cubic-bezier(0.175,0.885,0.32,1.275); box-shadow: var(--shadow-card);"
                  onmouseover="this.style.transform='translateY(-8px)'; this.style.boxShadow='0 20px 40px rgba(249,115,22,0.15)'; this.style.borderColor='var(--accent)';"
                  onmouseout="this.style.transform=''; this.style.boxShadow='var(--shadow-card)'; this.style.borderColor='var(--border)';">
                 <div style="font-size: 3rem; margin-bottom: 1rem;">
-                    {% if dept.name == 'SIMS' %}🎓
-                    {% elif dept.name == 'CMS' %}📋
-                    {% elif dept.name == 'PMS' %}📊
-                    {% elif dept.name == 'Core Banking' %}🏦
+                    {% if cat.name == 'SIMS' %}🎓
+                    {% elif cat.name == 'CMS' %}📋
+                    {% elif cat.name == 'PMS' %}📊
+                    {% elif cat.name == 'Core Banking' %}🏦
                     {% else %}💼{% endif %}
                 </div>
-                <div style="font-weight: 800; font-size: 1.15rem; color: var(--text-primary); margin-bottom: 0.5rem;">{{ dept.name }}</div>
-                <div style="font-size: 0.82rem; color: var(--text-secondary); line-height: 1.5;">{{ dept.description[:70] }}{% if dept.description|length > 70 %}...{% endif %}</div>
+                <div style="font-weight: 800; font-size: 1.15rem; color: var(--text-primary); margin-bottom: 0.5rem;">{{ cat.name }}</div>
+                <div style="font-size: 0.82rem; color: var(--text-secondary); line-height: 1.5;">{{ cat.description[:70] }}{% if cat.description|length > 70 %}...{% endif %}</div>
                 <div style="margin-top: 1rem; display: inline-block; padding: 0.35rem 1rem; background: var(--accent-surface); color: var(--accent); border-radius: 20px; font-size: 0.78rem; font-weight: 700;">Start Learning →</div>
             </div>
         </a>
@@ -97,7 +97,7 @@
         <div class="feature-card">
             <div class="feature-icon"><i class='bx bxs-bar-chart-alt-2'></i></div>
             <div class="feature-title">Progress Tracking</div>
-            <div class="feature-desc">Monitor your course completion in real-time with per-module progress dashboards.</div>
+            <div class="feature-desc">Monitor your category completion in real-time with per-module progress dashboards.</div>
         </div>
         <div class="feature-card">
             <div class="feature-icon"><i class='bx bxs-badge-check'></i></div>
@@ -264,7 +264,7 @@
             <img src="/static/images/backgrounds/bg3.jpeg" alt="African employees in a classroom with technology" style="width: 100%; height: 220px; object-fit: cover; border-radius: 0; display: block;">
             <div style="padding: 1.25rem; background: var(--bg-card);">
                 <h4 style="font-weight: 800; margin-bottom: 0.3rem;">Collaborative Learning</h4>
-                <p style="font-size: 0.9rem; color: var(--text-muted); margin: 0;">African employees working together on coursework and projects.</p>
+                <p style="font-size: 0.9rem; color: var(--text-muted); margin: 0;">African employees working together on categorywork and projects.</p>
             </div>
         </div>
         <div style="border-radius: var(--radius-xl); overflow: hidden; border: 1px solid var(--border); box-shadow: var(--shadow-card);">
@@ -295,7 +295,7 @@
         <div class="stat-card" style="box-shadow: none; background: transparent;">
             <div class="stat-icon"><i class='bx bxs-book-content'></i></div>
             <div class="stat-value">50+</div>
-            <div class="stat-label">Offline-Optimized Courses</div>
+            <div class="stat-label">Offline-Optimized categories</div>
         </div>
         <div class="stat-card" style="box-shadow: none; background: transparent;">
             <div class="stat-icon"><i class='bx bxs-network-chart'></i></div>

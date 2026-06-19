@@ -8,8 +8,8 @@ from db_compat import USE_POSTGRES
 
 from routes.auth import register_auth
 from routes.dashboard import register_dashboard
-from routes.courses import register_courses
-from routes.departments import register_departments
+from routes.categories import register_categories
+from routes.systems import register_systems
 from routes.lessons import register_lessons
 from routes.assessments import register_assessments
 from routes.discussions import register_discussions
@@ -126,7 +126,7 @@ try:
     admin_hash = generate_password_hash('admin123')
     admin_email = 'admin@SurePay.com'
     admin_username = 'admin'
-    admin_full_name = 'System Administrator'
+    admin_full_name = 'system Administrator'
     admin_phone = '+256700000001'
 
     if USE_POSTGRES:
@@ -176,10 +176,10 @@ try:
                 CREATE TABLE IF NOT EXISTS badges (
                     id SERIAL PRIMARY KEY,
                     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-                    course_id INTEGER NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+                    category_id INTEGER NOT NULL REFERENCES categories(id) ON DELETE CASCADE,
                     badge_type TEXT DEFAULT 'completion',
                     awarded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    UNIQUE(user_id, course_id, badge_type)
+                    UNIQUE(user_id, category_id, badge_type)
                 )
             ''')
         else:
@@ -187,12 +187,12 @@ try:
                 CREATE TABLE IF NOT EXISTS badges (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     user_id INTEGER NOT NULL,
-                    course_id INTEGER NOT NULL,
+                    category_id INTEGER NOT NULL,
                     badge_type TEXT DEFAULT 'completion',
                     awarded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-                    FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
-                    UNIQUE(user_id, course_id, badge_type)
+                    FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE,
+                    UNIQUE(user_id, category_id, badge_type)
                 )
             ''')
     except Exception:
@@ -227,7 +227,7 @@ try:
         pass
 
     try:
-        db_fix.execute("ALTER TABLE courses RENAME COLUMN lecturer_id TO admin_id")
+        db_fix.execute("ALTER TABLE categories RENAME COLUMN lecturer_id TO admin_id")
     except Exception:
         pass
         
@@ -245,7 +245,7 @@ try:
                 CREATE TABLE IF NOT EXISTS bookmarks (
                     id SERIAL PRIMARY KEY,
                     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-                    course_id INTEGER,
+                    category_id INTEGER,
                     lesson_id INTEGER,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
@@ -255,7 +255,7 @@ try:
                 CREATE TABLE IF NOT EXISTS bookmarks (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     user_id INTEGER NOT NULL,
-                    course_id INTEGER,
+                    category_id INTEGER,
                     lesson_id INTEGER,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -302,6 +302,12 @@ try:
             db_fix.execute(ddl)
         except Exception:
             pass  # Column already exists
+
+    # Migration: allow multiple quiz attempts (attempt_number column on submissions)
+    try:
+        db_fix.execute("ALTER TABLE submissions ADD COLUMN attempt_number INTEGER DEFAULT 1")
+    except Exception:
+        pass  # Column already exists
 
     # Migration: lesson_qa table
     try:
@@ -353,7 +359,7 @@ try:
                 "By creating an account and using this platform you agree to the following terms:\n\n"
                 "1. You will use the platform for legitimate learning and training purposes only.\n"
                 "2. You are responsible for keeping your login credentials secure.\n"
-                "3. Course content and materials are provided for your personal development and "
+                "3. category content and materials are provided for your personal development and "
                 "may not be redistributed without permission.\n"
                 "4. You agree to engage respectfully with other learners and staff.\n"
                 "5. SurePay may update these terms from time to time; continued use after an update "
@@ -379,14 +385,14 @@ except Exception as e:
 
 
 # ---------------------------------------------------------------------------
-# Context processor — inject nav departments + current user
+# Context processor — inject nav systems + current user
 # ---------------------------------------------------------------------------
 
 @app.context_processor
 def inject_nav_data():
     try:
         db = get_db()
-        depts = db.execute('SELECT id, name, description FROM departments ORDER BY name').fetchall()
+        cats = db.execute('SELECT id, name, description FROM systems ORDER BY name').fetchall()
         # Load platform branding settings
         settings_rows = db.execute('SELECT key, value FROM platform_settings').fetchall()
         db.close()
@@ -398,15 +404,23 @@ def inject_nav_data():
         platform.setdefault('logo_url', '')
         platform.setdefault('terms_content', '')
         platform.setdefault('terms_version', '1')
-        return dict(nav_departments=depts, platform=platform)
+        platform.setdefault('privacy_content', '')
+        platform.setdefault('about_content', '')
+        platform.setdefault('help_content', '')
+        platform.setdefault('how_it_works_content', '')
+        return dict(nav_systems=cats, platform=platform)
     except Exception:
-        return dict(nav_departments=[], platform={
+        return dict(nav_systems=[], platform={
             'company_name': 'SurePay',
             'primary_color': '#312783',
             'secondary_color': '#95c01f',
             'logo_url': '',
             'terms_content': '',
-            'terms_version': '1'
+            'terms_version': '1',
+            'privacy_content': '',
+            'about_content': '',
+            'help_content': '',
+            'how_it_works_content': ''
         })
 
 
@@ -421,8 +435,8 @@ register_filters(app)
 
 register_auth(app)
 register_dashboard(app)
-register_courses(app)
-register_departments(app)
+register_categories(app)
+register_systems(app)
 register_lessons(app)
 register_assessments(app)
 register_discussions(app)

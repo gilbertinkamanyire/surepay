@@ -3,109 +3,160 @@ from datetime import datetime
 from flask import render_template, request, redirect, url_for, session, flash, g, abort
 from helpers import login_required, role_required, send_notification_email
 
+MAX_ATTEMPTS = 3
+
 def register_assessments(app):
 
 
-    @app.route('/courses/<int:course_id>/assessments/<int:assessment_id>')
+    @app.route('/categories/<int:category_id>/assessments/<int:assessment_id>')
     @login_required
-    def take_assessment(course_id, assessment_id):
+    def take_assessment(category_id, assessment_id):
         assessment = g.db.execute(
-            'SELECT * FROM assessments WHERE id = ? AND course_id = ?',
-            (assessment_id, course_id)
+            'SELECT * FROM assessments WHERE id = ? AND category_id = ?',
+            (assessment_id, category_id)
         ).fetchone()
 
         if not assessment:
             abort(404)
 
-        # Check visibility and expiration for students
-        if session.get('role') == 'student':
+        # Check visibility and expiration for employees
+        if session.get('role') == 'employee':
             if assessment['is_hidden']:
-                flash('This assessment is currently hidden by the lecturer.', 'warning')
-                return redirect(url_for('course_detail', course_id=course_id))
+                flash('This assessment is currently hidden by the trainer.', 'warning')
+                return redirect(url_for('category_detail', category_id=category_id))
             
             if assessment['available_until']:
                 try:
                     expiry = datetime.strptime(assessment['available_until'], '%Y-%m-%dT%H:%M')
                     if datetime.now() > expiry:
                         flash('This assessment has expired and is no longer available.', 'danger')
-                        return redirect(url_for('course_detail', course_id=course_id))
+                        return redirect(url_for('category_detail', category_id=category_id))
                 except:
                     pass
 
-        course = g.db.execute('SELECT * FROM courses WHERE id = ?', (course_id,)).fetchone()
+        category = g.db.execute('SELECT * FROM categories WHERE id = ?', (category_id,)).fetchone()
 
         # Check if employee_id is provided (for reviewers)
         employee_id = request.args.get('employee_id', session['user_id'], type=int)
         
-        # Security: only lecturers/admins can see other students' submissions
+        # Security: only admins can see other employees' submissions
         if employee_id != session['user_id'] and session['role'] not in ('lecturer', 'admin'):
             abort(403)
 
-        # Check if already submitted
-        existing = g.db.execute(
-            'SELECT * FROM submissions WHERE assessment_id = ? AND employee_id = ?',
+        # Fetch ALL submissions for this employee/assessment (ordered by attempt)
+        all_submissions = g.db.execute(
+            'SELECT * FROM submissions WHERE assessment_id = ? AND employee_id = ? ORDER BY attempt_number ASC',
             (assessment_id, employee_id)
-        ).fetchone()
+        ).fetchall()
 
+        attempt_count = len(all_submissions)
         questions = json.loads(assessment['questions_json'])
 
-        if existing:
-            answers = json.loads(existing['answers_json'])
+        # Get the best-scoring submission (for display)
+        best_submission = None
+        if all_submissions:
+            best_submission = max(all_submissions, key=lambda s: (s['score'] / s['max_score']) if s['max_score'] > 0 else 0)
+
+        # If max attempts reached, show score-only results page
+        if attempt_count >= MAX_ATTEMPTS:
             return render_template('assessments/results.html',
                                  assessment=assessment,
-                                 course=course,
-                                 submission=existing,
+                                 category=category,
+                                 submission=best_submission,
+                                 all_submissions=all_submissions,
                                  questions=questions,
-                                 answers=answers)
+                                 answers={},
+                                 attempt_count=attempt_count,
+                                 max_attempts=MAX_ATTEMPTS,
+                                 can_retry=False)
 
+        # If already attempted but can still retry (employee viewing their results)
+        if all_submissions and employee_id == session['user_id'] and session['role'] not in ('admin', 'lecturer'):
+            last_submission = all_submissions[-1]
+            return render_template('assessments/results.html',
+                                 assessment=assessment,
+                                 category=category,
+                                 submission=best_submission,
+                                 all_submissions=all_submissions,
+                                 questions=questions,
+                                 answers={},
+                                 attempt_count=attempt_count,
+                                 max_attempts=MAX_ATTEMPTS,
+                                 can_retry=(attempt_count < MAX_ATTEMPTS))
+
+        # Admin/reviewer: show full results with answer review
+        if all_submissions and session['role'] in ('admin', 'lecturer'):
+            last_submission = all_submissions[-1]
+            answers = json.loads(last_submission['answers_json'])
+            return render_template('assessments/results.html',
+                                 assessment=assessment,
+                                 category=category,
+                                 submission=best_submission,
+                                 all_submissions=all_submissions,
+                                 questions=questions,
+                                 answers=answers,
+                                 attempt_count=attempt_count,
+                                 max_attempts=MAX_ATTEMPTS,
+                                 can_retry=False)
+
+        # No submission yet — show the quiz form
         return render_template('assessments/take.html',
                              assessment=assessment,
-                             course=course,
-                             questions=questions)
+                             category=category,
+                             questions=questions,
+                             attempt_count=attempt_count,
+                             max_attempts=MAX_ATTEMPTS)
 
 
-    @app.route('/courses/<int:course_id>/assessments/<int:assessment_id>/submissions')
+    @app.route('/categories/<int:category_id>/assessments/<int:assessment_id>/submissions')
     @role_required('admin')
-    def view_submissions(course_id, assessment_id):
+    def view_submissions(category_id, assessment_id):
         assessment = g.db.execute('SELECT * FROM assessments WHERE id = ?', (assessment_id,)).fetchone()
         if not assessment:
             abort(404)
-        course = g.db.execute('SELECT * FROM courses WHERE id = ?', (course_id,)).fetchone()
+        category = g.db.execute('SELECT * FROM categories WHERE id = ?', (category_id,)).fetchone()
         
+        # Get best submission per employee + attempt count
         submissions = g.db.execute('''
-            SELECT sub.*, u.full_name, u.username
+            SELECT sub.*, u.full_name, u.username,
+                   (SELECT COUNT(*) FROM submissions s2 WHERE s2.assessment_id = sub.assessment_id AND s2.employee_id = sub.employee_id) as attempt_count,
+                   (SELECT MAX(s3.score * 1.0 / NULLIF(s3.max_score, 0)) FROM submissions s3 WHERE s3.assessment_id = sub.assessment_id AND s3.employee_id = sub.employee_id) as best_pct
             FROM submissions sub
             JOIN users u ON sub.employee_id = u.id
             WHERE sub.assessment_id = ?
+              AND sub.attempt_number = (
+                  SELECT MAX(s4.attempt_number) FROM submissions s4
+                  WHERE s4.assessment_id = sub.assessment_id AND s4.employee_id = sub.employee_id
+              )
             ORDER BY sub.submitted_at DESC
         ''', (assessment_id,)).fetchall()
         
         return render_template('assessments/submissions.html', 
                              assessment=assessment, 
-                             course=course, 
+                             category=category, 
                              submissions=submissions)
 
 
-    @app.route('/courses/<int:course_id>/assessments/<int:assessment_id>/submit', methods=['POST'])
+    @app.route('/categories/<int:category_id>/assessments/<int:assessment_id>/submit', methods=['POST'])
     @login_required
-    def submit_assessment(course_id, assessment_id):
+    def submit_assessment(category_id, assessment_id):
         assessment = g.db.execute(
-            'SELECT * FROM assessments WHERE id = ? AND course_id = ?',
-            (assessment_id, course_id)
+            'SELECT * FROM assessments WHERE id = ? AND category_id = ?',
+            (assessment_id, category_id)
         ).fetchone()
 
         if not assessment:
             abort(404)
 
-        # Check if already submitted
-        existing = g.db.execute(
-            'SELECT id FROM submissions WHERE assessment_id = ? AND employee_id = ?',
+        # Count existing attempts
+        attempt_count = g.db.execute(
+            'SELECT COUNT(*) FROM submissions WHERE assessment_id = ? AND employee_id = ?',
             (assessment_id, session['user_id'])
-        ).fetchone()
+        ).fetchone()[0]
 
-        if existing:
-            flash('You have already submitted this assessment.', 'warning')
-            return redirect(url_for('take_assessment', course_id=course_id, assessment_id=assessment_id))
+        if attempt_count >= MAX_ATTEMPTS:
+            flash(f'You have used all {MAX_ATTEMPTS} attempts for this assessment.', 'danger')
+            return redirect(url_for('take_assessment', category_id=category_id, assessment_id=assessment_id))
 
         questions = json.loads(assessment['questions_json'])
         answers = {}
@@ -120,25 +171,35 @@ def register_assessments(app):
                 if answer == q['correct']:
                     score += 1
 
+        new_attempt_number = attempt_count + 1
+
         g.db.execute(
-            'INSERT INTO submissions (assessment_id, employee_id, answers_json, score, max_score) VALUES (?, ?, ?, ?, ?)',
-            (assessment_id, session['user_id'], json.dumps(answers), score, max_score)
+            'INSERT INTO submissions (assessment_id, employee_id, answers_json, score, max_score, attempt_number) VALUES (?, ?, ?, ?, ?, ?)',
+            (assessment_id, session['user_id'], json.dumps(answers), score, max_score, new_attempt_number)
         )
         g.db.commit()
 
-        # Check for course completion badge
-        total_quizzes = g.db.execute('SELECT COUNT(*) FROM assessments WHERE course_id = ?', (course_id,)).fetchone()[0]
+        # Badge/certificate logic: use BEST score across all attempts
+        total_quizzes = g.db.execute('SELECT COUNT(*) FROM assessments WHERE category_id = ?', (category_id,)).fetchone()[0]
         
-        my_submissions = g.db.execute('''
-            SELECT a.id, s.score, s.max_score
+        # Get best submission per assessment for this user
+        my_best_submissions = g.db.execute('''
+            SELECT a.id,
+                   MAX(s.score * 1.0 / NULLIF(s.max_score, 0)) as best_ratio,
+                   (SELECT s2.max_score FROM submissions s2 WHERE s2.assessment_id = a.id AND s2.employee_id = ? ORDER BY s2.score DESC LIMIT 1) as best_max_score,
+                   (SELECT s2.score FROM submissions s2 WHERE s2.assessment_id = a.id AND s2.employee_id = ? ORDER BY s2.score DESC LIMIT 1) as best_score
             FROM assessments a
-            JOIN submissions s ON a.id = s.assessment_id
-            WHERE a.course_id = ? AND s.employee_id = ?
-        ''', (course_id, session['user_id'])).fetchall()
+            JOIN submissions s ON a.id = s.assessment_id AND s.employee_id = ?
+            WHERE a.category_id = ?
+            GROUP BY a.id
+        ''', (session['user_id'], session['user_id'], session['user_id'], category_id)).fetchall()
 
-        if len(my_submissions) == total_quizzes and total_quizzes > 0:
-            total_score = sum(s['score'] for s in my_submissions)
-            total_max = sum(s['max_score'] for s in my_submissions)
+        assessed_ids = {r['id'] for r in my_best_submissions}
+        all_assessment_ids = {r['id'] for r in g.db.execute('SELECT id FROM assessments WHERE category_id = ?', (category_id,)).fetchall()}
+
+        if assessed_ids >= all_assessment_ids and total_quizzes > 0:
+            total_score = sum(r['best_score'] for r in my_best_submissions)
+            total_max = sum(r['best_max_score'] for r in my_best_submissions)
             if total_max > 0:
                 avg_percentage = (total_score / total_max) * 100
                 
@@ -152,38 +213,46 @@ def register_assessments(app):
                     
                 if badge_type:
                     try:
-                        g.db.execute('''
-                            INSERT INTO badges (user_id, course_id, badge_type)
-                            VALUES (?, ?, ?)
-                        ''', (session['user_id'], course_id, badge_type))
-                        g.db.commit()
-                        flash(f'Congratulations! You earned a {badge_type.title()} badge for this course!', 'success')
-                    except Exception as e:
-                        pass # Badge might already exist
+                        # Upsert: upgrade badge if better performance
+                        existing_badge = g.db.execute(
+                            'SELECT id, badge_type FROM badges WHERE user_id = ? AND category_id = ?',
+                            (session['user_id'], category_id)
+                        ).fetchone()
+                        
+                        badge_rank = {'bronze': 1, 'silver': 2, 'golden': 3}
+                        if existing_badge:
+                            if badge_rank.get(badge_type, 0) > badge_rank.get(existing_badge['badge_type'], 0):
+                                g.db.execute(
+                                    'UPDATE badges SET badge_type = ?, awarded_at = CURRENT_TIMESTAMP WHERE id = ?',
+                                    (badge_type, existing_badge['id'])
+                                )
+                                g.db.commit()
+                                flash(f'🏅 Your badge has been upgraded to {badge_type.title()}!', 'success')
+                        else:
+                            g.db.execute(
+                                'INSERT INTO badges (user_id, category_id, badge_type) VALUES (?, ?, ?)',
+                                (session['user_id'], category_id, badge_type)
+                            )
+                            g.db.commit()
+                            flash(f'🎉 Congratulations! You earned a {badge_type.title()} badge for this category!', 'success')
+                    except Exception:
+                        pass
 
-        lecturer = g.db.execute('''
-            SELECT u.email, u.full_name 
-            FROM courses c JOIN users u ON c.admin_id = u.id 
-            WHERE c.id = ?
-        ''', (course_id,)).fetchone()
+        pct = round((score / max_score) * 100) if max_score > 0 else 0
+        attempts_left = MAX_ATTEMPTS - new_attempt_number
+        if attempts_left > 0:
+            flash(f'Submitted! Score: {score}/{max_score} ({pct}%). You have {attempts_left} attempt(s) remaining.', 'success')
+        else:
+            flash(f'Final attempt submitted! Best score will be used for your certificate.', 'info')
 
-        if lecturer:
-            send_notification_email(
-                subject=f"New Assessment Submission for {assessment['title']}",
-                text_part=f"A student ({session.get('full_name')}) has submitted the assessment.",
-                html_part=f"<h3>New Submission</h3><p>A student (<b>{session.get('full_name')}</b>) has submitted the assessment <b>{assessment['title']}</b> with a score of {score}/{max_score}.</p>",
-                specific_emails=[{"Email": lecturer['email'], "Name": lecturer['full_name']}]
-            )
-
-        flash(f'Assessment submitted! Score: {score}/{max_score}', 'success')
-        return redirect(url_for('take_assessment', course_id=course_id, assessment_id=assessment_id))
+        return redirect(url_for('take_assessment', category_id=category_id, assessment_id=assessment_id))
 
 
-    @app.route('/courses/<int:course_id>/assessments/create', methods=['GET', 'POST'])
+    @app.route('/categories/<int:category_id>/assessments/create', methods=['GET', 'POST'])
     @role_required('admin')
-    def create_assessment(course_id):
-        course = g.db.execute('SELECT * FROM courses WHERE id = ?', (course_id,)).fetchone()
-        if not course:
+    def create_assessment(category_id):
+        category = g.db.execute('SELECT * FROM categories WHERE id = ?', (category_id,)).fetchone()
+        if not category:
             abort(404)
 
         if request.method == 'POST':
@@ -223,39 +292,39 @@ def register_assessments(app):
                 is_hidden = 1 if request.form.get('is_hidden') else 0
 
                 g.db.execute(
-                    'INSERT INTO assessments (course_id, lesson_id, title, description, questions_json, time_limit, privacy_mode, is_hidden, available_until) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                    (course_id, lesson_id, title, description, json.dumps(questions), time_limit, privacy_mode, is_hidden, avail_until)
+                    'INSERT INTO assessments (category_id, lesson_id, title, description, questions_json, time_limit, privacy_mode, is_hidden, available_until) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                    (category_id, lesson_id, title, description, json.dumps(questions), time_limit, privacy_mode, is_hidden, avail_until)
                 )
                 g.db.commit()
                 send_notification_email(
-                    subject=f"New Assessment Added in {course['title']}",
-                    text_part=f"A new assessment '{title}' has been added to {course['title']}.",
-                    html_part=f"<h3>New Assessment Added</h3><p>A new assessment <b>{title}</b> has been added to <b>{course['title']}</b>.</p>",
+                    subject=f"New Assessment Added in {category['title']}",
+                    text_part=f"A new assessment '{title}' has been added to {category['title']}.",
+                    html_part=f"<h3>New Assessment Added</h3><p>A new assessment <b>{title}</b> has been added to <b>{category['title']}</b>.</p>",
                     notify_roles=['student']
                 )
                 flash('Assessment created!', 'success')
-                return redirect(url_for('course_detail', course_id=course_id))
+                return redirect(url_for('category_detail', category_id=category_id))
             else:
                 flash('Title and at least one question are required.', 'danger')
 
-        lessons = g.db.execute('SELECT id, title FROM lessons WHERE course_id = ? ORDER BY order_num', (course_id,)).fetchall()
-        return render_template('assessments/create.html', course=course, lessons=lessons)
+        lessons = g.db.execute('SELECT id, title FROM lessons WHERE category_id = ? ORDER BY order_num', (category_id,)).fetchall()
+        return render_template('assessments/create.html', category=category, lessons=lessons)
 
-    @app.route('/courses/<int:course_id>/assessments/<int:assessment_id>/edit', methods=['GET', 'POST'])
+    @app.route('/categories/<int:category_id>/assessments/<int:assessment_id>/edit', methods=['GET', 'POST'])
     @role_required('admin')
-    def edit_assessment(course_id, assessment_id):
+    def edit_assessment(category_id, assessment_id):
         assessment = g.db.execute(
-            'SELECT * FROM assessments WHERE id = ? AND course_id = ?',
-            (assessment_id, course_id)
+            'SELECT * FROM assessments WHERE id = ? AND category_id = ?',
+            (assessment_id, category_id)
         ).fetchone()
         
         if not assessment:
             abort(404)
         
-        course = g.db.execute('SELECT * FROM courses WHERE id = ?', (course_id,)).fetchone()
+        category = g.db.execute('SELECT * FROM categories WHERE id = ?', (category_id,)).fetchone()
         
         # Check permissions
-        if session['role'] != 'admin' and course['admin_id'] != session['user_id']:
+        if session['role'] != 'admin' and category['admin_id'] != session['user_id']:
             abort(403)
             
         if request.method == 'POST':
@@ -300,48 +369,51 @@ def register_assessments(app):
                 )
                 g.db.commit()
                 flash('Assessment updated!', 'success')
-                return redirect(url_for('course_detail', course_id=course_id))
+                return redirect(url_for('category_detail', category_id=category_id))
 
         questions = json.loads(assessment['questions_json'])
-        lessons = g.db.execute('SELECT id, title FROM lessons WHERE course_id = ? ORDER BY order_num', (course_id,)).fetchall()
-        return render_template('assessments/edit.html', assessment=assessment, course=course, questions=questions, lessons=lessons)
+        lessons = g.db.execute('SELECT id, title FROM lessons WHERE category_id = ? ORDER BY order_num', (category_id,)).fetchall()
+        return render_template('assessments/edit.html', assessment=assessment, category=category, questions=questions, lessons=lessons)
 
 
-    @app.route('/courses/<int:course_id>/assessments/<int:assessment_id>/delete', methods=['POST'])
+    @app.route('/categories/<int:category_id>/assessments/<int:assessment_id>/delete', methods=['POST'])
     @role_required('admin')
-    def delete_assessment(course_id, assessment_id):
-        course = g.db.execute('SELECT admin_id FROM courses WHERE id = ?', (course_id,)).fetchone()
-        if session['role'] != 'admin' and course['admin_id'] != session['user_id']:
+    def delete_assessment(category_id, assessment_id):
+        category = g.db.execute('SELECT admin_id FROM categories WHERE id = ?', (category_id,)).fetchone()
+        if session['role'] != 'admin' and category['admin_id'] != session['user_id']:
             abort(403)
             
-        g.db.execute('DELETE FROM assessments WHERE id = ? AND course_id = ?', (assessment_id, course_id))
+        g.db.execute('DELETE FROM assessments WHERE id = ? AND category_id = ?', (assessment_id, category_id))
         g.db.commit()
         flash('Assessment deleted.', 'info')
-        return redirect(url_for('course_detail', course_id=course_id))
+        return redirect(url_for('category_detail', category_id=category_id))
 
-    @app.route('/courses/<int:course_id>/certificate')
+    @app.route('/categories/<int:category_id>/certificate')
     @login_required
-    def view_certificate(course_id):
+    def view_certificate(category_id):
         user_id = session['user_id']
-        course = g.db.execute('SELECT * FROM courses WHERE id = ?', (course_id,)).fetchone()
-        if not course:
+        category = g.db.execute('SELECT * FROM categories WHERE id = ?', (category_id,)).fetchone()
+        if not category:
             abort(404)
 
         user = g.db.execute('SELECT full_name FROM users WHERE id = ?', (user_id,)).fetchone()
 
-        # Get all submissions for this course
+        # Get BEST submission per assessment for this user (best score wins)
         submissions = g.db.execute('''
-            SELECT s.score, s.max_score
-            FROM submissions s
-            JOIN assessments a ON s.assessment_id = a.id
-            WHERE a.course_id = ? AND s.employee_id = ?
-        ''', (course_id, user_id)).fetchall()
+            SELECT a.id as assessment_id,
+                   MAX(s.score) as best_score,
+                   s.max_score
+            FROM assessments a
+            JOIN submissions s ON a.id = s.assessment_id AND s.employee_id = ?
+            WHERE a.category_id = ?
+            GROUP BY a.id, s.max_score
+        ''', (user_id, category_id)).fetchall()
 
         if not submissions:
-            flash('You have not completed any assessments in this course yet.', 'warning')
-            return redirect(url_for('course_detail', course_id=course_id))
+            flash('You have not completed any assessments in this category yet.', 'warning')
+            return redirect(url_for('category_detail', category_id=category_id))
 
-        total_score = sum(s['score'] for s in submissions)
+        total_score = sum(s['best_score'] for s in submissions)
         total_max = sum(s['max_score'] for s in submissions)
         score_pct = round((total_score / total_max) * 100) if total_max > 0 else 0
 
@@ -366,8 +438,8 @@ def register_assessments(app):
         except Exception:
             platform_name = 'SurePay'
 
-        return render_template('courses/certificate.html',
-                             course=course,
+        return render_template('categories/certificate.html',
+                             category=category,
                              user_name=user['full_name'],
                              score_pct=score_pct,
                              cert_class=cert_class,

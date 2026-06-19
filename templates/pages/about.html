@@ -2,161 +2,27 @@
 {% block title %}About Us{% endblock %}
 
 {% block content %}
-<div class="about-hero bg-hero-img">
-    <div class="about-hero-content">
-        <h1 style="color: var(--text-primary); -webkit-text-fill-color: initial; background: none;">Empowering Uganda Through Fast, Accessible Learning</h1>
-        <p>SurePay is the first lightweight e-learning ecosystem built specifically for the unique digital landscape of East Africa.</p>
-        <img src="/static/images/backgrounds/hero_main.jpeg" alt="African employees working with laptops in a modern workspace" class="about-banner-img" style="height: 350px;">
-    </div>
-</div>
-
-<div class="about-section">
-    <div class="about-section-title">
-        <h2 style="font-size: 2.5rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.5rem;">Built for Your Reality</h2>
-        <p style="font-size: 1.1rem; color: var(--text-muted); max-width: 650px; margin: 0 auto;">We believe that education should be accessible regardless of your device or connection speed.</p>
-    </div>
-
-    <div class="about-grid">
-        <div class="about-card">
-            <img src="/static/images/backgrounds/bg1.jpeg" alt="African youth using smartphone for learning" style="width: 100%; height: 150px; object-fit: cover; border-radius: var(--radius); margin-bottom: 1.25rem; border: 1px solid var(--border);">
-            <div class="about-card-icon">🚀</div>
-            <h3>Ultra-Lightweight</h3>
-            <p>Our pages are optimized to load in milliseconds, even on 2G and 3G networks, consuming minimal data.</p>
-        </div>
-        <div class="about-card">
-            <img src="/static/images/backgrounds/bg2.jpeg" alt="African woman using a computer" style="width: 100%; height: 150px; object-fit: cover; border-radius: var(--radius); margin-bottom: 1.25rem; border: 1px solid var(--border);">
-            <div class="about-card-icon">📱</div>
-            <h3>Mobile-First</h3>
-            <p>Designed to provide a premium experience on every device, from high-end smartphones to basic tablets.</p>
-        </div>
-        <div class="about-card">
-            <img src="/static/images/backgrounds/bg3.jpeg" alt="African employees collaborating in classroom" style="width: 100%; height: 150px; object-fit: cover; border-radius: var(--radius); margin-bottom: 1.25rem; border: 1px solid var(--border);">
-            <div class="about-card-icon">🧠</div>
-            <h3>Mirror & Synergy</h3>
-            <p>Exclusive features like Cognitive Mirror and Synergy Connect foster P2P learning and self-reflection.</p>
+<div style="max-width: 820px; margin: 0 auto;">
+    <div class="page-header" style="margin-bottom:1.5rem;">
+        <div>
+            <h1><i class='bx bxs-info-circle' style="color:var(--secondary-accent);"></i> About Us</h1>
         </div>
     </div>
-</div>
-
-<div class="methodology-section">
-    <div class="container" style="max-width: 1000px;">
-        <div class="flex-between" style="align-items: flex-start; gap: 4rem; flex-wrap: wrap;">
-            <div style="flex: 1; min-width: 300px;">
-                <div class="feature-pill">🔬 THE METHODOLOGY</div>
-                <h2 style="font-size: 2.8rem; font-weight: 800; line-height: 1.1; margin-bottom: 1.5rem;">P2P Synergy & Reflective Growth</h2>
-                <p style="font-size: 1.1rem; margin-bottom: 1.5rem;">At SurePay, we don't just deliver content; we build ecosystems. Our **Synergy Connect** framework allows employees to solve problems together in real-time without the overhead of heavy video calls.</p>
-                <div style="display: grid; gap: 1rem;">
-                    <div style="display: flex; gap: 1rem;">
-                        <span style="color: var(--accent); font-weight: 900;">01</span>
-                        <span><strong>Cognitive Mirroring:</strong> Record your thought process during quizzes to identify learning gaps instantly.</span>
-                    </div>
-                    <div style="display: flex; gap: 1rem;">
-                        <span style="color: var(--accent); font-weight: 900;">02</span>
-                        <span><strong>Bandwidth Guard:</strong> Intelligent detection that switches to text-only mode during peak traffic or low signal.</span>
-                    </div>
-                    <div style="display: flex; gap: 1rem;">
-                        <span style="color: var(--accent); font-weight: 900;">03</span>
-                        <span><strong>Direct Verification:</strong> Every click and attempt translates directly to your progress and attendance.</span>
-                    </div>
+    <div class="card p-3">
+        <div class="content-body" style="line-height: 1.6;">
+            {% if platform.about_content %}
+                <div class="markdown-prose">
+                    {{ platform.about_content | markdown | safe }}
                 </div>
-            </div>
-            <div style="flex: 0 0 320px; overflow: hidden; border-radius: var(--radius-xl); box-shadow: var(--shadow-lg); border: 1px solid var(--border);">
-                <img src="/static/images/backgrounds/bg1.jpeg" alt="African employees with technology" style="width: 100%; height: 220px; object-fit: cover; display: block;">
-                <div style="padding: 1.5rem; background: var(--bg-card);">
-                    <h3 style="color: var(--accent); margin-bottom: 0.5rem; font-size: 1.1rem;">Why It Works</h3>
-                    <ul style="list-style: none; display: grid; gap: 0.75rem; padding: 0; margin: 0;">
-                        <li style="display: flex; align-items: center; gap: 0.5rem;">✅ No JavaScript Overload</li>
-                        <li style="display: flex; align-items: center; gap: 0.5rem;">✅ Server-Side Excellence</li>
-                        <li style="display: flex; align-items: center; gap: 0.5rem;">✅ Database-Driven Tracking</li>
-                        <li style="display: flex; align-items: center; gap: 0.5rem;">✅ Zero-Lag Discussions</li>
-                    </ul>
-                </div>
-            </div>
+            {% else %}
+                <p style="color:var(--text-muted);">The about us content has not been published yet.</p>
+            {% endif %}
         </div>
     </div>
-</div>
-
-<div class="roadmap-container">
-    <div class="about-section-title">
-        <h2 style="font-size: 2.5rem; font-weight: 800;">Platform Roadmap 2026</h2>
-        <p>Our journey has just begun. Here is how we plan to evolve.</p>
+    {% if current_user and current_user.role == 'admin' %}
+    <div style="margin-top:1rem;">
+        <a href="{{ url_for('admin_settings') }}" class="btn btn-outline btn-sm"><i class='bx bxs-edit'></i> Edit About Us in Platform Settings</a>
     </div>
-    <div class="roadmap-grid">
-        <div class="roadmap-item">
-            <div class="badge badge-info mb-1">Q2 2026</div>
-            <h4>Offline Mode</h4>
-            <p>Full support for downloading lessons and taking assessments offline, with automatic sync when you reconnect.</p>
-        </div>
-        <div class="roadmap-item">
-            <div class="badge badge-info mb-1">Q3 2026</div>
-            <h4>AI Tutor Beta</h4>
-            <p>Personalized AI coaching that explains complex topics based on your Cognitive Mirror data.</p>
-        </div>
-        <div class="roadmap-item">
-            <div class="badge badge-info mb-1">Q4 2026</div>
-            <h4>Partner Program</h4>
-            <p>Direct integration with top Lugandan universities to offer certified digital diplomas.</p>
-        </div>
-    </div>
-</div>
-
-<div class="testimonial-section">
-    <div class="testimonial-card">
-        <p style="font-style: italic; font-size: 1.1rem;">"SurePay changed how I study in Kampala. I used to spend 10k UGX weekly on data for YouTube, but now I study for a whole month with just 2k UGX."</p>
-        <div class="testimonial-author">
-            <div style="width: 50px; height: 50px; background: var(--accent-surface); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800;">KN</div>
-            <div class="author-info">
-                <h5>Kasule Nathan</h5>
-                <span>Engineering Employee, UTAMU</span>
-            </div>
-        </div>
-    </div>
-    <div class="testimonial-card">
-        <p style="font-style: italic; font-size: 1.1rem;">"Managing 200+ employees was a nightmare until SurePay. The automatic attendance and grading system saves me 5 hours of manual work every week."</p>
-        <div class="testimonial-author">
-            <div style="width: 50px; height: 50px; background: var(--secondary-accent); opacity: 0.2; border-radius: 50%; position: absolute;"></div>
-            <div style="width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; font-weight: 800; position: relative;">DV</div>
-            <div class="author-info" style="margin-left: 1rem;">
-                <h5>Dr. Vincent O.</h5>
-                <span>Senior Trainer, CS Dept</span>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="mission-vision">
-    <div class="mission-text">
-        <div class="badge badge-warning" style="margin-bottom: 1rem;">Our Mission</div>
-        <h2 style="font-size: 2.2rem; font-weight: 800; color: var(--text-primary); line-height: 1.2; margin-bottom: 1.5rem;">To democratize digital education across the continent.</h2>
-        <p style="margin-bottom: 1.5rem;">We are tackling the "Digital Divide" head-on. By removing the barriers of high data costs and heavy software requirements, we empower the next generation of Ugandan leaders, engineers, and creators to start their journey today.</p>
-        <p style="margin-bottom: 0;">Our vision is to become the heartbeat of online education in East Africa, connecting 1 million employees by 2030.</p>
-    </div>
-    <div class="mission-stats">
-        <div class="stat-box">
-            <span class="stat-number">10x</span>
-            <span class="stat-label">Faster Loading</span>
-        </div>
-        <div class="stat-box">
-            <span class="stat-number">95%</span>
-            <span class="stat-label">Less Data</span>
-        </div>
-        <div class="stat-box">
-            <span class="stat-number">24/7</span>
-            <span class="stat-label">P2P Support</span>
-        </div>
-        <div class="stat-box">
-            <span class="stat-number">FREE</span>
-            <span class="stat-label">For Employees</span>
-        </div>
-    </div>
-</div>
-
-<div class="contact-cta">
-    <h2 style="font-size: 2.5rem; font-weight: 800; margin-bottom: 0.5rem;">Ready to start your journey?</h2>
-    <p style="margin-bottom: 2rem; opacity: 0.9;">Join thousands of employees and admins on the most efficient learning platform in Uganda.</p>
-    <div class="flex gap-1" style="justify-content: center;">
-        <a href="{{ url_for('register') }}" class="btn btn-primary" style="background: white; color: var(--accent); border: none; font-weight: 800;">Create Account</a>
-        <a href="mailto:okiria.vincent@employee.utamu.ac.ug" class="btn btn-outline" style="background: rgba(255,255,255,0.1); color: white; border-color: white;">Contact Team</a>
-    </div>
+    {% endif %}
 </div>
 {% endblock %}

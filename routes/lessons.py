@@ -7,12 +7,12 @@ from helpers import login_required, role_required, send_notification_email, log_
 def register_lessons(app):
 
 
-    @app.route('/courses/<int:course_id>/lessons/<int:lesson_id>')
+    @app.route('/categories/<int:category_id>/lessons/<int:lesson_id>')
     @login_required
-    def view_lesson(course_id, lesson_id):
+    def view_lesson(category_id, lesson_id):
         lesson = g.db.execute(
-            'SELECT * FROM lessons WHERE id = ? AND course_id = ?',
-            (lesson_id, course_id)
+            'SELECT * FROM lessons WHERE id = ? AND category_id = ?',
+            (lesson_id, category_id)
         ).fetchone()
 
         if not lesson:
@@ -20,14 +20,14 @@ def register_lessons(app):
 
         # Log attendance for employees
         if session.get('role') == 'employee':
-            log_attendance(session['user_id'], course_id, lesson_id, 'view')
+            log_attendance(session['user_id'], category_id, lesson_id, 'view')
 
-        course = g.db.execute('SELECT * FROM courses WHERE id = ?', (course_id,)).fetchone()
+        category = g.db.execute('SELECT * FROM categories WHERE id = ?', (category_id,)).fetchone()
 
         # Get all lessons for navigation
         all_lessons = g.db.execute(
-            'SELECT id, title, order_num FROM lessons WHERE course_id = ? ORDER BY order_num',
-            (course_id,)
+            'SELECT id, title, order_num FROM lessons WHERE category_id = ? ORDER BY order_num',
+            (category_id,)
         ).fetchall()
 
         # Find prev/next
@@ -48,8 +48,8 @@ def register_lessons(app):
 
         # Find linked assessment (questionnaire) for this lesson, if any
         lesson_assessment = g.db.execute(
-            'SELECT * FROM assessments WHERE course_id = ? AND lesson_id = ?',
-            (course_id, lesson_id)
+            'SELECT * FROM assessments WHERE category_id = ? AND lesson_id = ?',
+            (category_id, lesson_id)
         ).fetchone()
 
         assessment_submitted = False
@@ -85,9 +85,9 @@ def register_lessons(app):
             ORDER BY qa.created_at DESC
         ''', (lesson_id,)).fetchall()
 
-        return render_template('courses/lesson.html',
+        return render_template('categories/lesson.html',
                              lesson=lesson,
-                             course=course,
+                             category=category,
                              all_lessons=all_lessons,
                              prev_lesson=prev_lesson,
                              next_lesson=next_lesson,
@@ -99,9 +99,9 @@ def register_lessons(app):
                              qa_items=qa_items)
 
 
-    @app.route('/courses/<int:course_id>/lessons/<int:lesson_id>/complete', methods=['POST'])
+    @app.route('/categories/<int:category_id>/lessons/<int:lesson_id>/complete', methods=['POST'])
     @login_required
-    def complete_lesson(course_id, lesson_id):
+    def complete_lesson(category_id, lesson_id):
         # Mark lesson complete
         existing = g.db.execute(
             'SELECT * FROM lesson_progress WHERE employee_id = ? AND lesson_id = ?',
@@ -119,36 +119,36 @@ def register_lessons(app):
                 (session['user_id'], lesson_id)
             )
 
-        # Update course progress
+        # Update category progress
         total_lessons = g.db.execute(
-            'SELECT COUNT(*) FROM lessons WHERE course_id = ?', (course_id,)
+            'SELECT COUNT(*) FROM lessons WHERE category_id = ?', (category_id,)
         ).fetchone()[0]
 
         completed_lessons = g.db.execute('''
             SELECT COUNT(*) FROM lesson_progress lp
             JOIN lessons l ON lp.lesson_id = l.id
-            WHERE lp.employee_id = ? AND l.course_id = ? AND lp.completed = 1
-        ''', (session['user_id'], course_id)).fetchone()[0]
+            WHERE lp.employee_id = ? AND l.category_id = ? AND lp.completed = 1
+        ''', (session['user_id'], category_id)).fetchone()[0]
 
         progress = (completed_lessons / total_lessons * 100) if total_lessons > 0 else 0
 
         g.db.execute(
-            'UPDATE enrollments SET progress = ?, last_lesson_id = ? WHERE employee_id = ? AND course_id = ?',
-            (round(progress, 1), lesson_id, session['user_id'], course_id)
+            'UPDATE enrollments SET progress = ?, last_lesson_id = ? WHERE employee_id = ? AND category_id = ?',
+            (round(progress, 1), lesson_id, session['user_id'], category_id)
         )
 
         g.db.commit()
         flash('Lesson marked as complete!', 'success')
-        return redirect(url_for('view_lesson', course_id=course_id, lesson_id=lesson_id))
+        return redirect(url_for('view_lesson', category_id=category_id, lesson_id=lesson_id))
 
 
-    @app.route('/courses/<int:course_id>/lessons/<int:lesson_id>/bookmark', methods=['POST'])
+    @app.route('/categories/<int:category_id>/lessons/<int:lesson_id>/bookmark', methods=['POST'])
     @login_required
-    def toggle_bookmark(course_id, lesson_id):
+    def toggle_bookmark(category_id, lesson_id):
         user_id = session.get('user_id')
         if not user_id:
             flash('Please log in to bookmark lessons.', 'info')
-            return redirect(request.referrer or url_for('view_lesson', course_id=course_id, lesson_id=lesson_id))
+            return redirect(request.referrer or url_for('view_lesson', category_id=category_id, lesson_id=lesson_id))
 
         existing = g.db.execute('SELECT id FROM bookmarks WHERE user_id = ? AND lesson_id = ?', (user_id, lesson_id)).fetchone()
         try:
@@ -157,22 +157,22 @@ def register_lessons(app):
                 g.db.commit()
                 flash('Bookmark removed.', 'info')
             else:
-                g.db.execute('INSERT INTO bookmarks (user_id, course_id, lesson_id) VALUES (?, ?, ?)', (user_id, course_id, lesson_id))
+                g.db.execute('INSERT INTO bookmarks (user_id, category_id, lesson_id) VALUES (?, ?, ?)', (user_id, category_id, lesson_id))
                 g.db.commit()
                 flash('Bookmarked lesson.', 'success')
         except Exception:
             flash('Could not update bookmark at this time.', 'danger')
 
-        return redirect(request.referrer or url_for('view_lesson', course_id=course_id, lesson_id=lesson_id))
+        return redirect(request.referrer or url_for('view_lesson', category_id=category_id, lesson_id=lesson_id))
 
 
-    @app.route('/courses/<int:course_id>/lessons/<int:lesson_id>/notes', methods=['POST'])
+    @app.route('/categories/<int:category_id>/lessons/<int:lesson_id>/notes', methods=['POST'])
     @login_required
-    def save_lesson_note(course_id, lesson_id):
+    def save_lesson_note(category_id, lesson_id):
         user_id = session.get('user_id')
         if not user_id:
             flash('Please log in to save notes.', 'info')
-            return redirect(request.referrer or url_for('view_lesson', course_id=course_id, lesson_id=lesson_id))
+            return redirect(request.referrer or url_for('view_lesson', category_id=category_id, lesson_id=lesson_id))
 
         delete_flag = request.form.get('delete_note')
         content = request.form.get('note', '').strip()
@@ -200,17 +200,17 @@ def register_lessons(app):
         except Exception:
             flash('Could not save note at this time.', 'danger')
 
-        return redirect(request.referrer or url_for('view_lesson', course_id=course_id, lesson_id=lesson_id))
+        return redirect(request.referrer or url_for('view_lesson', category_id=category_id, lesson_id=lesson_id))
 
 
-    @app.route('/courses/<int:course_id>/lessons/add', methods=['GET', 'POST'])
+    @app.route('/categories/<int:category_id>/lessons/add', methods=['GET', 'POST'])
     @role_required('admin')
-    def add_lesson(course_id):
-        course = g.db.execute('SELECT * FROM courses WHERE id = ?', (course_id,)).fetchone()
-        if not course:
+    def add_lesson(category_id):
+        category = g.db.execute('SELECT * FROM categories WHERE id = ?', (category_id,)).fetchone()
+        if not category:
             abort(404)
 
-        if session['role'] != 'admin' and course['admin_id'] != session['user_id']:
+        if session['role'] != 'admin' and category['admin_id'] != session['user_id']:
             abort(403)
 
         if request.method == 'POST':
@@ -262,50 +262,50 @@ def register_lessons(app):
             elif title and content:
                 # Insert Lesson
                 cursor = g.db.execute(
-                    'INSERT INTO lessons (course_id, title, content, attachment_url, attachment_type, order_num, is_hidden) VALUES (?, ?, ?, ?, ?, ?, ?)',
-                    (course_id, title, content, attachment_url, attachment_type, order_num, is_hidden)
+                    'INSERT INTO lessons (category_id, title, content, attachment_url, attachment_type, order_num, is_hidden) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                    (category_id, title, content, attachment_url, attachment_type, order_num, is_hidden)
                 )
                 lesson_id = cursor.lastrowid
 
                 # Insert Assessment
                 g.db.execute(
-                    'INSERT INTO assessments (course_id, lesson_id, title, questions_json) VALUES (?, ?, ?, ?)',
-                    (course_id, lesson_id, assessment_title, json.dumps(questions))
+                    'INSERT INTO assessments (category_id, lesson_id, title, questions_json) VALUES (?, ?, ?, ?)',
+                    (category_id, lesson_id, assessment_title, json.dumps(questions))
                 )
 
                 g.db.commit()
                 send_notification_email(
-                    subject=f"New Lesson Added in {course['title']}",
-                    text_part=f"A new lesson '{title}' has been added to {course['title']}.",
-                    html_part=f"<h3>New Lesson Added</h3><p>A new lesson <b>{title}</b> has been added to <b>{course['title']}</b>.</p>",
+                    subject=f"New Lesson Added in {category['title']}",
+                    text_part=f"A new lesson '{title}' has been added to {category['title']}.",
+                    html_part=f"<h3>New Lesson Added</h3><p>A new lesson <b>{title}</b> has been added to <b>{category['title']}</b>.</p>",
                     notify_roles=['student']
                 )
                 flash('Lesson and required assessment added successfully!', 'success')
-                return redirect(url_for('course_detail', course_id=course_id))
+                return redirect(url_for('category_detail', category_id=category_id))
             else:
                 flash('Lesson title and content are required.', 'danger')
 
         # Get max order for default
         max_order = g.db.execute(
-            'SELECT COALESCE(MAX(order_num), 0) + 1 FROM lessons WHERE course_id = ?',
-            (course_id,)
+            'SELECT COALESCE(MAX(order_num), 0) + 1 FROM lessons WHERE category_id = ?',
+            (category_id,)
         ).fetchone()[0]
 
-        return render_template('courses/add_lesson.html', course=course, max_order=max_order)
+        return render_template('categories/add_lesson.html', category=category, max_order=max_order)
 
 
-    @app.route('/courses/<int:course_id>/lessons/<int:lesson_id>/edit', methods=['GET', 'POST'])
+    @app.route('/categories/<int:category_id>/lessons/<int:lesson_id>/edit', methods=['GET', 'POST'])
     @role_required('admin')
-    def edit_lesson(course_id, lesson_id):
+    def edit_lesson(category_id, lesson_id):
         lesson = g.db.execute(
-            'SELECT * FROM lessons WHERE id = ? AND course_id = ?',
-            (lesson_id, course_id)
+            'SELECT * FROM lessons WHERE id = ? AND category_id = ?',
+            (lesson_id, category_id)
         ).fetchone()
 
         if not lesson:
             abort(404)
 
-        course = g.db.execute('SELECT * FROM courses WHERE id = ?', (course_id,)).fetchone()
+        category = g.db.execute('SELECT * FROM categories WHERE id = ?', (category_id,)).fetchone()
 
         if request.method == 'POST':
             title = request.form.get('title', '').strip()
@@ -337,42 +337,42 @@ def register_lessons(app):
                     )
                 g.db.commit()
                 flash('Lesson updated!', 'success')
-                return redirect(url_for('view_lesson', course_id=course_id, lesson_id=lesson_id))
+                return redirect(url_for('view_lesson', category_id=category_id, lesson_id=lesson_id))
 
-        return render_template('courses/edit_lesson.html', lesson=lesson, course=course)
+        return render_template('categories/edit_lesson.html', lesson=lesson, category=category)
 
 
-    @app.route('/courses/<int:course_id>/lessons/<int:lesson_id>/delete', methods=['POST'])
+    @app.route('/categories/<int:category_id>/lessons/<int:lesson_id>/delete', methods=['POST'])
     @role_required('admin')
-    def delete_lesson(course_id, lesson_id):
-        g.db.execute('DELETE FROM lessons WHERE id = ? AND course_id = ?', (lesson_id, course_id))
+    def delete_lesson(category_id, lesson_id):
+        g.db.execute('DELETE FROM lessons WHERE id = ? AND category_id = ?', (lesson_id, category_id))
         g.db.commit()
         flash('Lesson deleted.', 'info')
-        return redirect(url_for('course_detail', course_id=course_id))
+        return redirect(url_for('category_detail', category_id=category_id))
 
 
-    @app.route('/courses/<int:course_id>/lessons/<int:lesson_id>/download')
+    @app.route('/categories/<int:category_id>/lessons/<int:lesson_id>/download')
     @login_required
-    def download_resource(course_id, lesson_id):
+    def download_resource(category_id, lesson_id):
         lesson = g.db.execute(
-            'SELECT attachment_url FROM lessons WHERE id = ? AND course_id = ?',
-            (lesson_id, course_id)
+            'SELECT attachment_url FROM lessons WHERE id = ? AND category_id = ?',
+            (lesson_id, category_id)
         ).fetchone()
 
         if not lesson or not lesson['attachment_url']:
             flash('Resource not found.', 'danger')
-            return redirect(url_for('view_lesson', course_id=course_id, lesson_id=lesson_id))
+            return redirect(url_for('view_lesson', category_id=category_id, lesson_id=lesson_id))
 
         # Log attendance
         if session.get('role') == 'student':
-            log_attendance(session['user_id'], course_id, lesson_id, 'download')
+            log_attendance(session['user_id'], category_id, lesson_id, 'download')
 
         filename = lesson['attachment_url'].split('/')[-1]
         return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
-    @app.route('/courses/<int:course_id>/lessons/<int:lesson_id>/qa/ask', methods=['POST'])
+    @app.route('/categories/<int:category_id>/lessons/<int:lesson_id>/qa/ask', methods=['POST'])
     @login_required
-    def ask_lesson_question(course_id, lesson_id):
+    def ask_lesson_question(category_id, lesson_id):
         question_text = request.form.get('question', '').strip()
         if not question_text:
             flash('Please enter a question.', 'danger')
@@ -383,11 +383,11 @@ def register_lessons(app):
             )
             g.db.commit()
             flash('Your question has been posted!', 'success')
-        return redirect(url_for('view_lesson', course_id=course_id, lesson_id=lesson_id) + '#qa-section')
+        return redirect(url_for('view_lesson', category_id=category_id, lesson_id=lesson_id) + '#qa-section')
 
-    @app.route('/courses/<int:course_id>/lessons/<int:lesson_id>/qa/<int:qa_id>/answer', methods=['POST'])
+    @app.route('/categories/<int:category_id>/lessons/<int:lesson_id>/qa/<int:qa_id>/answer', methods=['POST'])
     @login_required
-    def answer_lesson_question(course_id, lesson_id, qa_id):
+    def answer_lesson_question(category_id, lesson_id, qa_id):
         answer_text = request.form.get('answer', '').strip()
         if not answer_text:
             flash('Please enter an answer.', 'danger')
@@ -395,7 +395,7 @@ def register_lessons(app):
             g.db.execute('UPDATE lesson_qa SET answer = ? WHERE id = ?', (answer_text, qa_id))
             g.db.commit()
             flash('Answer posted!', 'success')
-        return redirect(url_for('view_lesson', course_id=course_id, lesson_id=lesson_id) + '#qa-section')
+        return redirect(url_for('view_lesson', category_id=category_id, lesson_id=lesson_id) + '#qa-section')
 
     @app.route('/api/generate_lesson_from_pdf', methods=['POST'])
     @login_required

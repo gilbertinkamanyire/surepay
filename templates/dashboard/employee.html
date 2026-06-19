@@ -12,12 +12,12 @@
             <h1>Welcome back, <span class="welcome-name">{{ current_user.full_name }}</span>! 👋</h1>
             <p>
                 You're enrolled in <strong style="color:#d7ff7a;">{{ total_enrolled }}</strong>
-                course{{ '' if total_enrolled == 1 else 's' }} and have completed
+                category{{ '' if total_enrolled == 1 else 's' }} and have completed
                 <strong style="color:#d7ff7a;">{{ total_completed }}</strong> of them.
                 Keep learning &mdash; every lesson moves you forward.
             </p>
             <div class="welcome-actions">
-                <a href="{{ url_for('courses_list') }}" class="btn btn-on-blue"><i class='bx bxs-book-open'></i> Browse Courses</a>
+                <a href="{{ url_for('categories_list') }}" class="btn btn-on-blue"><i class='bx bxs-book-open'></i> Browse categories</a>
                 <a href="{{ url_for('employee_grades') }}" class="btn btn-on-green"><i class='bx bxs-bar-chart-alt-2'></i> View My Grades</a>
             </div>
         </div>
@@ -49,7 +49,7 @@
     <div class="stat-card dash-stat dash-stat--blue">
         <div class="stat-icon">📚</div>
         <div class="stat-value">{{ total_enrolled }}</div>
-        <div class="stat-label">Enrolled Courses</div>
+        <div class="stat-label">Enrolled categories</div>
     </div>
     <div class="stat-card dash-stat dash-stat--green">
         <div class="stat-icon">✅</div>
@@ -70,13 +70,13 @@
 
 <div class="layout-grid" style="display:grid; grid-template-columns: 2fr 1fr; gap:1.5rem; align-items:start;">
     
-    <!-- Left Column: Courses -->
+    <!-- Left Column: categories -->
     <div>
-        <h2 class="dash-section-title"><i class='bx bxs-graduation'></i> My Courses</h2>
+        <h2 class="dash-section-title"><i class='bx bxs-graduation'></i> My categories</h2>
 {% if enrollments %}
-<div class="course-grid">
+<div class="category-grid">
     {% for e in enrollments %}
-    <div class="course-card" style="padding: 1.5rem;">
+    <div class="category-card" style="padding: 1.5rem;">
         <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:0.5rem;">
             <h3 style="font-size:1.1rem; margin-bottom:0.35rem;">{{ e.title }}</h3>
             <span class="badge badge-success">{{ e.category or 'General' }}</span>
@@ -92,15 +92,15 @@
             <div class="progress-fill" style="width: {{ e.progress or 0 }}%;"></div>
         </div>
         <div style="margin-top:1rem;">
-            <a href="{{ url_for('course_detail', course_id=e.course_id) }}" class="btn btn-primary btn-sm">Continue</a>
+            <a href="{{ url_for('category_detail', category_id=e.category_id) }}" class="btn btn-primary btn-sm">Continue</a>
         </div>
     </div>
     {% endfor %}
 </div>
 {% else %}
 <div class="dash-empty">
-    <p>You haven't enrolled in any courses yet.</p>
-    <a href="{{ url_for('courses_list') }}" class="btn btn-primary mt-2">Find a Course</a>
+    <p>You haven't enrolled in any categories yet.</p>
+    <a href="{{ url_for('categories_list') }}" class="btn btn-primary mt-2">Find a category</a>
 </div>
 {% endif %}
     </div>
@@ -192,7 +192,7 @@
                 {% for a in assessments %}
                 <div style="padding:0.75rem 0; border-bottom:1px solid var(--border-light);">
                     <strong>{{ a.title }}</strong>
-                    <div style="font-size:0.82rem; color:var(--text-muted);">{{ a.course_title }} · {{ a.created_at|timeago }}</div>
+                    <div style="font-size:0.82rem; color:var(--text-muted);">{{ a.category_title }} · {{ a.created_at|timeago }}</div>
                 </div>
                 {% endfor %}
             {% else %}
@@ -259,7 +259,7 @@
                 <span style="font-size:0.65rem; font-weight:900; letter-spacing:0.12em; color:{{ cert_color }}; text-transform:uppercase;">{{ cert_label }}</span>
             </div>
             <div>
-                <div style="font-weight:900; font-size:0.95rem; color:white; margin-bottom:0.25rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ b.course_title }}</div>
+                <div style="font-weight:900; font-size:0.95rem; color:white; margin-bottom:0.25rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ b.category_title }}</div>
                 <div style="font-size:0.65rem; font-weight:700; letter-spacing:0.1em; color:{{ cert_color }}; text-transform:uppercase;">{{ b.badge_type|title }} Achievement</div>
             </div>
         </div>

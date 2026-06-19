@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Certificate - {{ course.title }}</title>
+    <title>Certificate - {{ category.title }}</title>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -263,8 +263,8 @@
             <div class="cert-name">{{ user_name }}</div>
 
             <div class="cert-detail">
-                For successfully completing the course
-                <strong>"{{ course.title }}"</strong>
+                For successfully completing the category
+                <strong>"{{ category.title }}"</strong>
                 with an overall score of <strong>{{ score_pct }}%</strong>.
                 <br>Awarded on <strong>{{ award_date }}</strong>.
             </div>

@@ -1,33 +1,33 @@
 {% extends 'base.html' %}
-{% block title %}Add New Course{% endblock %}
+{% block title %}Add New category{% endblock %}
 
 {% block content %}
 <div class="breadcrumb">
     <a href="{{ url_for('dashboard') }}">Dashboard</a>
     <span class="breadcrumb-sep">›</span>
-    <span>Add New Course</span>
+    <span>Add New category</span>
 </div>
 
 <div class="page-header">
-    <h1>📚 Add New Course</h1>
-    <p>Add a new training course to the platform</p>
+    <h1>📚 Add New category</h1>
+    <p>Add a new training category to the platform</p>
 </div>
 
 <div class="card" style="max-width: 700px;">
-    <form method="POST" action="{{ url_for('create_course') }}" enctype="multipart/form-data">
+    <form method="POST" action="{{ url_for('create_category') }}" enctype="multipart/form-data">
         <div class="form-group">
-            <label class="form-label" for="title">Course Title *</label>
+            <label class="form-label" for="title">category Title *</label>
             <input type="text" id="title" name="title" class="form-input" 
                    placeholder="e.g. Introduction to Applied ICT" required autofocus>
         </div>
 
         <div class="form-row">
             <div class="form-group">
-                <label class="form-label" for="category">Category / Tag</label>
+                <label class="form-label" for="category">category / Tag</label>
                 <input type="text" id="category" name="category" class="form-input" placeholder="e.g. Programming, Arts">
             </div>
             <div class="form-group">
-                <label class="form-label" for="image">Course Image Cover <span style="font-size: 0.8rem; font-weight: normal; color: var(--text-muted);">(Optional)</span></label>
+                <label class="form-label" for="image">category Image Cover <span style="font-size: 0.8rem; font-weight: normal; color: var(--text-muted);">(Optional)</span></label>
                 <input type="file" id="image" name="image" class="form-input" accept="image/*">
             </div>
         </div>
@@ -35,23 +35,23 @@
         <div class="form-group">
             <label class="form-label" for="description">Description</label>
             <textarea id="description" name="description" class="form-textarea" rows="4"
-                      placeholder="Describe what employees will learn in this course..."></textarea>
+                      placeholder="Describe what employees will learn in this category..."></textarea>
         </div>
         
         <div class="form-group">
             <label class="form-checkbox">
                 <input type="checkbox" name="is_published" value="1">
-                Publish immediately (employees can see this course)
+                Publish immediately (employees can see this category)
             </label>
         </div>
         
         <div class="form-row">
             <div class="form-group">
-                <label class="form-label" for="department_id">Department *</label>
-                <select id="department_id" name="department_id" class="form-select" required>
-                    <option value="">-- Select Department --</option>
-                    {% for dept in departments %}
-                    <option value="{{ dept.id }}" {% if preselect_dept == dept.id %}selected{% endif %}>{{ dept.name }}</option>
+                <label class="form-label" for="system_id">system *</label>
+                <select id="system_id" name="system_id" class="form-select" required>
+                    <option value="">-- Select system --</option>
+                    {% for cat in systems %}
+                    <option value="{{ cat.id }}" {% if preselect_cat == cat.id %}selected{% endif %}>{{ cat.name }}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -60,7 +60,7 @@
         </div>
         
         <div class="btn-group">
-            <button type="submit" class="btn btn-primary">Add Course</button>
+            <button type="submit" class="btn btn-primary">Add category</button>
             <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Cancel</a>
         </div>
     </form>

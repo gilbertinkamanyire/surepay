@@ -29,6 +29,26 @@ def nl2br(value):
     from markupsafe import Markup, escape
     return Markup(escape(value).replace('\n', '<br>\n'))
 
+def markdown_filter(text):
+    if not text:
+        return ''
+    try:
+        import markdown as md
+        import bleach
+        from markupsafe import Markup
+        
+        # Sanitize the input to strip all HTML tags first to strictly disable HTML
+        clean_text = bleach.clean(text, tags=[], attributes={}, strip=True)
+        
+        # Parse markdown to HTML
+        html = md.markdown(clean_text, extensions=['fenced_code', 'tables'])
+        return Markup(html)
+    except ImportError:
+        # Fallback if libraries are not installed yet
+        from markupsafe import Markup, escape
+        return Markup(escape(text).replace('\n', '<br>\n'))
+
 def register_filters(app):
     app.template_filter('timeago')(timeago)
     app.template_filter('nl2br')(nl2br)
+    app.template_filter('markdown')(markdown_filter)

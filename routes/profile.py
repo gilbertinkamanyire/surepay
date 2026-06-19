@@ -51,7 +51,7 @@ def register_profile(app):
         # Get user stats
         if user['role'] == 'student':
             stats = {
-                'enrolled_courses': g.db.execute(
+                'enrolled_categories': g.db.execute(
                     'SELECT COUNT(*) FROM enrollments WHERE employee_id = ?', (user['id'],)
                 ).fetchone()[0],
                 'completed_lessons': g.db.execute(
@@ -63,12 +63,12 @@ def register_profile(app):
             }
         elif user['role'] == 'lecturer':
             stats = {
-                'courses_created': g.db.execute(
-                    'SELECT COUNT(*) FROM courses WHERE admin_id = ?', (user['id'],)
+                'categories_created': g.db.execute(
+                    'SELECT COUNT(*) FROM categories WHERE admin_id = ?', (user['id'],)
                 ).fetchone()[0],
                 'total_students': g.db.execute('''
                     SELECT COUNT(DISTINCT e.employee_id) FROM enrollments e
-                    JOIN courses c ON e.course_id = c.id
+                    JOIN categories c ON e.category_id = c.id
                     WHERE c.admin_id = ?
                 ''', (user['id'],)).fetchone()[0],
             }
@@ -134,13 +134,13 @@ def register_profile(app):
         g.db.execute('DELETE FROM replies WHERE user_id = ?', (user_id,))
         g.db.execute('DELETE FROM learning_insights WHERE user_id = ?', (user_id,))
         
-        # If lecturer, also handle courses (this is more complex, might need to reassign or delete?)
-        # Let's say for now, we delete their courses too (cascading through lessons, etc.)
+        # If lecturer, also handle categories (this is more complex, might need to reassign or delete?)
+        # Let's say for now, we delete their categories too (cascading through lessons, etc.)
         if user['role'] == 'lecturer':
             # This will cascade to lessons, assignments, etc if ON DELETE CASCADE is set
-            courses = g.db.execute('SELECT id FROM courses WHERE admin_id = ?', (user_id,)).fetchall()
-            for c in courses:
-                g.db.execute('DELETE FROM courses WHERE id = ?', (c['id'],))
+            categories = g.db.execute('SELECT id FROM categories WHERE admin_id = ?', (user_id,)).fetchall()
+            for c in categories:
+                g.db.execute('DELETE FROM categories WHERE id = ?', (c['id'],))
 
         # Delete profile picture if exists
         if user['profile_pic_url'] and user['profile_pic_url'].startswith('/uploads/avatar_'):

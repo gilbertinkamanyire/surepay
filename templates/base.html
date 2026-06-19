@@ -10,6 +10,7 @@
     <title>{% block title %}SurePay{% endblock %} | Online Learning Platform</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="manifest" href="{{ url_for('manifest') }}">
+    <link rel="icon" type="image/jpeg" href="{{ url_for('static', filename='images/favicon.jpg') }}">
     <!-- Modern Icons -->
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
     <style>
@@ -32,8 +33,39 @@
         }
         .navbar { border-bottom: 2px solid {{ platform.primary_color }}10; }
         .navbar-brand { color: var(--brand-primary) !important; }
-        .btn-primary { background: var(--brand-primary); border-color: var(--brand-primary); }
+        .btn-primary { background: var(--brand-primary); border: 2px solid var(--brand-primary); color: white !important; }
+        .btn-primary:hover { background: white !important; color: var(--brand-primary) !important; border-color: var(--brand-primary) !important; }
         .progress-fill { background: var(--brand-primary); }
+        .heading-icon {
+            height: 0.55em;
+            width: 0.55em;
+            object-fit: cover;
+            border-radius: 0.1em;
+            margin: 0 0.02em;
+            vertical-align: baseline;
+            display: inline-block;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        }
+        .open-sidebar-btn {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 0;
+            transform: translateY(-50%);
+            background: var(--brand-primary);
+            color: white;
+            padding: 1rem 0.3rem;
+            border-radius: 0 6px 6px 0;
+            cursor: pointer;
+            z-index: 1000;
+            box-shadow: 3px 0 10px rgba(0,0,0,0.2);
+            transition: all 0.2s ease;
+        }
+        .open-sidebar-btn i { font-size: 1.8rem; }
+        .open-sidebar-btn:hover { padding-left: 0.6rem; filter: brightness(1.1); }
+        @media (min-width: 901px) {
+            .sidenav-toggle-input:checked ~ .open-sidebar-btn { display: flex; align-items: center; justify-content: center; }
+        }
     </style>
 </head>
 <body class="{% block body_class %}{% endblock %} mode-{{ session.get('bandwidth_mode', 'standard') }} mode-{{ session.get('theme_mode', 'light') }}">
@@ -78,8 +110,7 @@
     <nav class="navbar" role="navigation" aria-label="Main navigation">
         <div class="container">
             <a href="{{ url_for('index') }}" class="navbar-brand">
-                    <img src="{{ platform.logo_url or url_for('static', filename='images/brand_wallet.svg') }}" alt="{{ platform.company_name }} logo" style="height: 36px; width: auto; object-fit: contain; margin-right: 0.5rem; vertical-align: middle;">
-                {{ platform.company_name }}
+                S<img src="{{ url_for('static', filename='images/favicon.jpg') }}" alt="u" class="heading-icon">rePay
             </a>
             
             <!-- CSS-only Mobile Menu Toggle -->
@@ -94,13 +125,13 @@
                     
                     <!-- Learning Dropdown -->
                     <li class="dropdown">
-                        <a href="{{ url_for('courses_list') }}" class="{% if 'course' in (request.endpoint|default('', true)) or request.endpoint in ('cognitive_mirror', 'synergy_connect') %}active{% endif %}">
+                        <a href="{{ url_for('categories_list') }}" class="{% if 'category' in (request.endpoint|default('', true)) or request.endpoint in ('cognitive_mirror', 'synergy_connect') %}active{% endif %}">
                             <i class='bx bxs-graduation'></i> Learning <i class='bx bx-chevron-down'></i>
                         </a>
                         <ul class="dropdown-menu">
-                            <li><a href="{{ url_for('courses_list') }}"><i class='bx bxs-book-open'></i> All Courses</a></li>
-                            {% for dept in nav_departments %}
-                                <li><a href="{{ url_for('courses_list', dept=dept.id) }}" style="padding-left: 2rem; font-size: 0.85rem; opacity: 0.8;">↳ {{ dept.name }}</a></li>
+                            <li><a href="{{ url_for('categories_list') }}"><i class='bx bxs-book-open'></i> All categories</a></li>
+                            {% for cat in nav_systems %}
+                                <li><a href="{{ url_for('categories_list', cat=cat.id) }}" style="padding-left: 2rem; font-size: 0.85rem; opacity: 0.8;">↳ {{ cat.name }}</a></li>
                             {% endfor %}
                             {% if current_user and current_user.role == 'employee' %}
                                 <li><a href="{{ url_for('cognitive_mirror') }}"><i class='bx bx-reflect-vertical'></i> Mirror</a></li>
@@ -122,9 +153,9 @@
                                 </a>
                             <ul class="dropdown-menu">
                                 <li><a href="{{ url_for('manage_announcements') }}">📢 Announce</a></li>
-                                <li><a href="{{ url_for('create_course') }}">📖 Add Course</a></li>
+                                <li><a href="{{ url_for('create_category') }}">📖 Add category</a></li>
                                 {% if current_user.role == 'admin' %}
-                                    <li><a href="{{ url_for('manage_departments') }}">🏢 Departments</a></li>
+                                    <li><a href="{{ url_for('manage_systems') }}">🏢 systems</a></li>
                                     <li><a href="{{ url_for('admin_users') }}">⚙️ Users</a></li>
                                     <li><a href="{{ url_for('admin_employee_progress') }}">📈 Employee Progress</a></li>
                                 {% endif %}
@@ -183,13 +214,13 @@
             <div class="side-nav-inner">
                 <div class="side-nav-heading">
                     <span>{% if current_user.role == 'admin' %}Admin Panel{% else %}My Workspace{% endif %}</span>
-                    <label for="sidenav-toggle-input" class="side-nav-close" aria-label="Close menu"><i class='bx bx-x'></i></label>
+                    <label for="sidenav-toggle-input" class="side-nav-close" aria-label="Collapse menu" style="cursor: pointer; font-size: 1.8rem; font-weight: 800; color: var(--text-primary);">&lt;</label>
                 </div>
                 {% if current_user.role == 'admin' %}
                     <a href="{{ url_for('dashboard') }}" class="side-nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}"><i class='bx bxs-dashboard'></i> Overview</a>
                     <a href="{{ url_for('manage_announcements') }}" class="side-nav-link {% if request.endpoint == 'manage_announcements' %}active{% endif %}"><i class='bx bxs-megaphone'></i> Announcements</a>
                     <a href="{{ url_for('admin_users') }}" class="side-nav-link {% if request.endpoint == 'admin_users' %}active{% endif %}"><i class='bx bxs-user-detail'></i> Manage Users</a>
-                    <a href="{{ url_for('manage_departments') }}" class="side-nav-link {% if request.endpoint == 'manage_departments' %}active{% endif %}"><i class='bx bxs-business'></i> Departments</a>
+                    <a href="{{ url_for('manage_systems') }}" class="side-nav-link {% if request.endpoint == 'manage_systems' %}active{% endif %}"><i class='bx bxs-business'></i> systems</a>
                     <a href="{{ url_for('admin_analytics') }}" class="side-nav-link {% if request.endpoint == 'admin_analytics' %}active{% endif %}"><i class='bx bxs-bar-chart-square'></i> Analytics</a>
                     <a href="{{ url_for('admin_employee_progress') }}" class="side-nav-link {% if request.endpoint == 'admin_employee_progress' %}active{% endif %}"><i class='bx bxs-report'></i> Employee Progress</a>
                     <div class="side-nav-divider"></div>
@@ -197,7 +228,7 @@
                     <a href="{{ url_for('terms') }}" class="side-nav-link {% if request.endpoint == 'terms' %}active{% endif %}"><i class='bx bxs-file'></i> Terms &amp; Conditions</a>
                 {% else %}
                     <a href="{{ url_for('dashboard') }}" class="side-nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}"><i class='bx bxs-home-circle'></i> Overview</a>
-                    <a href="{{ url_for('courses_list') }}" class="side-nav-link {% if 'course' in (request.endpoint|default('', true)) %}active{% endif %}"><i class='bx bxs-book-open'></i> My Courses</a>
+                    <a href="{{ url_for('categories_list') }}" class="side-nav-link {% if 'category' in (request.endpoint|default('', true)) %}active{% endif %}"><i class='bx bxs-book-open'></i> My categories</a>
                     <a href="{{ url_for('employee_grades') }}" class="side-nav-link {% if request.endpoint == 'employee_grades' %}active{% endif %}"><i class='bx bxs-bar-chart-alt-2'></i> My Grades</a>
                     <a href="{{ url_for('cognitive_mirror') }}" class="side-nav-link {% if request.endpoint == 'cognitive_mirror' %}active{% endif %}"><i class='bx bx-reflect-vertical'></i> Cognitive Mirror</a>
                     <a href="{{ url_for('synergy_connect') }}" class="side-nav-link {% if request.endpoint == 'synergy_connect' %}active{% endif %}"><i class='bx bx-group'></i> Synergy Connect</a>
@@ -214,12 +245,13 @@
         <!-- Backdrop: tap outside the drawer to close it (small screens only) -->
         <label for="sidenav-toggle-input" class="sidenav-overlay" aria-hidden="true"></label>
 
+        <!-- Floating greater-than sign to reopen sidebar -->
+        <label for="sidenav-toggle-input" class="open-sidebar-btn" aria-label="Open menu" title="Expand menu" style="font-family: monospace; font-weight: 900; font-size: 1.5rem; display: flex; align-items: center; justify-content: center; background-color: var(--success); color: white; border-radius: 50%; width: 44px; height: 44px; box-shadow: 0 4px 10px rgba(0,0,0,0.15);">
+            &gt;
+        </label>
+
         <main class="page-wrapper page-wrapper--app">
-            <div class="sidenav-toggle-bar">
-                <label for="sidenav-toggle-input" class="sidenav-toggle" role="button" tabindex="0" aria-controls="side-nav" aria-label="Toggle menu">
-                    <i class='bx bx-menu'></i> <span>Menu</span>
-                </label>
-            </div>
+
             <div class="container container--app">
     {% else %}
     <main class="page-wrapper">
@@ -240,7 +272,7 @@
         <div class="container">
             <div class="footer-content">
                 <div class="footer-text">
-                    &copy; 2026 SurePay Online Learning Platform (Commit: edd0bed)<br>
+                    &copy; 2026 SurePay Online Learning Platform<br>
                     <small>High-Efficiency Education for Low-Bandwidth Networks</small>
                     <div style="margin-top:0.5rem; font-size:0.85rem; color:var(--text-muted);">Design: <strong>Tinka</strong></div>
                     <div style="margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
@@ -330,6 +362,17 @@
                 window.open(whatsappLink, '_blank');
             }
         }
+
+        // Auto-dismiss flash messages after 2 seconds
+        setTimeout(() => {
+            const flashes = document.querySelectorAll('.flash-container .flash');
+            flashes.forEach(flash => {
+                flash.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                flash.style.opacity = '0';
+                flash.style.transform = 'translateY(-10px)';
+                setTimeout(() => flash.remove(), 500);
+            });
+        }, 2000);
     </script>
 </body>
 </html>

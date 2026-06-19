@@ -13,7 +13,7 @@ SurePay Learn is a lightweight, highly-efficient learning management system desi
 
 ### 🤝 Synergy Connect
 *Synergy Connect* is a peer-to-peer matching system designed to foster collaborative learning environments even when students are studying remotely.
-- **Smart Matching:** The system compares the progress of all students enrolled in a particular course.
+- **Smart Matching:** The system compares the progress of all students enrolled in a particular category.
 - **Mentors vs. Learners:** It identifies peers who are further ahead ("Potential Mentors") and peers who are slightly behind ("Potential Learners"). 
 - **15-Minute Syncs:** Students can initiate rapid "Sync Requests" with their matched peers to engage in quick, 15-minute peer tutoring sessions to get unstuck on specific topics, fostering a community-driven safety net.
 
@@ -25,13 +25,15 @@ SurePay Learn is built to function flawlessly even on 2G networks.
 - **Bandwidth Modes:** Users can toggle between "Standard", "Low Data", and "Ultra-Low Data" modes. The UI dynamically adjusts by stripping out heavy styling, suppressing animations, and filtering images to grayscale to save on data transfer.
 
 ### 2. Comprehensive Role Management
-- **Students:** Can enroll in courses, view lessons (which automatically tracks attendance points), take assessments, and view their Cognitive Mirror.
-- **Lecturers:** Can create courses, manage hidden/visible states for individual lessons and assignments, and review detailed submissions.
+- **Students:** Can enroll in categories, view lessons (which automatically tracks attendance points), take assessments, and view their Cognitive Mirror.
+- **Lecturers:** Can create categories, manage hidden/visible states for individual lessons and assignments, and review detailed submissions.
 - **Admins:** Have a powerful overarching dashboard with "Danger Zone" controls to wipe test data, manage all user roles, verify new lecturer accounts manually, and view system-wide analytics.
 
 ### 3. Integrated Assessment & Attendance Logging
 - **Attendance as Engagement:** Attendance isn't just logging in; it's tracked through active participation. Downloading a resource file or viewing a specific lesson module instantly logs attendance and awards "Participation Points".
-- **Transparent Progress:** Every course member can see a dedicated "Participants" tab showing exactly where everyone stands, gamifying progress and encouraging students to keep up with their peers.
+- **Multi-Attempt Quizzes:** Employees can attempt assessments up to 3 times, with the highest score automatically tracked for certificates and badges. Answers are hidden post-submission to prevent cheating.
+- **Secure Content Rendering:** All lessons and dynamic pages (Privacy Policy, About Us, etc.) use a fully integrated Markdown system with strict server-side HTML sanitization (XSS protection).
+- **Transparent Progress:** Every category member can see a dedicated "Participants" tab showing exactly where everyone stands, gamifying progress and encouraging students to keep up with their peers.
 
 ## 🖥️ Running Locally
 

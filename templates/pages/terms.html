@@ -12,7 +12,7 @@
     </div>
     <div class="card">
         {% if platform.terms_content %}
-            <div class="terms-content">{{ platform.terms_content }}</div>
+            <div class="terms-content">{{ platform.terms_content | markdown | safe }}</div>
         {% else %}
             <p style="color:var(--text-muted);">The terms &amp; conditions have not been published yet.</p>
         {% endif %}

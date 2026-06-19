@@ -56,15 +56,15 @@ def register_unique(app):
 
         # 5. Competency mirror data
         competencies = db.execute('''
-            SELECT c.id as course_id,
+            SELECT c.id as category_id,
                    c.title as skill_name,
                    c.category,
                    e.progress,
                    COUNT(l.id) as total_lessons,
                    SUM(CASE WHEN lp.completed = 1 THEN 1 ELSE 0 END) as completed_lessons
             FROM enrollments e
-            JOIN courses c ON e.course_id = c.id
-            LEFT JOIN lessons l ON l.course_id = c.id
+            JOIN categories c ON e.category_id = c.id
+            LEFT JOIN lessons l ON l.category_id = c.id
             LEFT JOIN lesson_progress lp ON lp.lesson_id = l.id AND lp.employee_id = ?
             WHERE e.employee_id = ?
             GROUP BY c.id, c.title, c.category, e.progress
@@ -77,7 +77,7 @@ def register_unique(app):
         for row in competencies:
             progress = float(row['progress'] or 0.0)
             skill = {
-                'course_id': row['course_id'],
+                'category_id': row['category_id'],
                 'title': row['skill_name'],
                 'category': row['category'] or 'General',
                 'progress': round(progress, 0),
@@ -119,8 +119,8 @@ def register_unique(app):
         # Collaborative data for Chart.js
         chart_data = db.execute('''
             SELECT c.title, COUNT(sm.id) as match_count
-            FROM courses c
-            JOIN synergy_matches sm ON c.id = sm.course_id
+            FROM categories c
+            JOIN synergy_matches sm ON c.id = sm.category_id
             GROUP BY c.id, c.title
             ORDER BY match_count DESC
             LIMIT 5
@@ -130,31 +130,31 @@ def register_unique(app):
         values = [row['match_count'] for row in chart_data]
 
         # Get my progress for comparison
-        my_enrollments = db.execute('SELECT course_id, progress FROM enrollments WHERE employee_id = ?', (user_id,)).fetchall()
-        my_progress_map = {e['course_id']: e['progress'] for e in my_enrollments}
+        my_enrollments = db.execute('SELECT category_id, progress FROM enrollments WHERE employee_id = ?', (user_id,)).fetchall()
+        my_progress_map = {e['category_id']: e['progress'] for e in my_enrollments}
         
-        course_ids = [c['course_id'] for c in my_enrollments]
+        category_ids = [c['category_id'] for c in my_enrollments]
         
         peers = []
-        if course_ids:
-            placeholders = ', '.join(['?'] * len(course_ids))
+        if category_ids:
+            placeholders = ', '.join(['?'] * len(category_ids))
             peers = db.execute(f'''
-                SELECT DISTINCT u.id, u.full_name, u.profile_pic_url, c.title as course_title, e.progress, e.course_id
+                SELECT DISTINCT u.id, u.full_name, u.profile_pic_url, c.title as category_title, e.progress, e.category_id
                 FROM users u
                 JOIN enrollments e ON u.id = e.employee_id
-                JOIN courses c ON e.course_id = c.id
-                WHERE e.course_id IN ({placeholders})
+                JOIN categories c ON e.category_id = c.id
+                WHERE e.category_id IN ({placeholders})
                 AND u.id != ?
                 ORDER BY RANDOM()
                 LIMIT 5
-            ''', (*course_ids, user_id)).fetchall()
+            ''', (*category_ids, user_id)).fetchall()
 
         # Get current active matches
         active_matches = db.execute('''
-            SELECT sm.*, u.full_name as peer_name, c.title as course_title
+            SELECT sm.*, u.full_name as peer_name, c.title as category_title
             FROM synergy_matches sm
             JOIN users u ON (CASE WHEN sm.user_a_id = ? THEN sm.user_b_id ELSE sm.user_a_id END) = u.id
-            JOIN courses c ON sm.course_id = c.id
+            JOIN categories c ON sm.category_id = c.id
             WHERE (sm.user_a_id = ? OR sm.user_b_id = ?) AND sm.is_active = 1
         ''', (user_id, user_id, user_id)).fetchall()
 
@@ -165,24 +165,24 @@ def register_unique(app):
                              chart_labels=labels,
                              chart_values=values)
 
-    @app.route('/synergy/sync/<int:peer_id>/<int:course_id>')
+    @app.route('/synergy/sync/<int:peer_id>/<int:category_id>')
     @login_required
-    def synergy_sync(peer_id, course_id):
+    def synergy_sync(peer_id, category_id):
         user_id = session['user_id']
         db = g.db
         
         # Check if match already exists
         existing = db.execute('''
             SELECT id FROM synergy_matches 
-            WHERE course_id = ? AND 
+            WHERE category_id = ? AND 
             ((user_a_id = ? AND user_b_id = ?) OR (user_a_id = ? AND user_b_id = ?))
-        ''', (course_id, user_id, peer_id, peer_id, user_id)).fetchone()
+        ''', (category_id, user_id, peer_id, peer_id, user_id)).fetchone()
 
         if not existing:
             db.execute('''
-                INSERT INTO synergy_matches (user_a_id, user_b_id, course_id, match_reason)
+                INSERT INTO synergy_matches (user_a_id, user_b_id, category_id, match_reason)
                 VALUES (?, ?, ?, ?)
-            ''', (user_id, peer_id, course_id, "Manual Peer Request"))
+            ''', (user_id, peer_id, category_id, "Manual Peer Request"))
             db.commit()
             flash("🤝 Synergy request created! You can now collaborate.", "success")
         else:
@@ -213,7 +213,8 @@ def register_unique(app):
         if transcript.strip():
             try:
                 from openai import OpenAI
-                client = OpenAI(api_key="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")
+                import os
+                client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY", ""))
                 
                 response = client.chat.completions.create(
                     model="gpt-3.5-turbo",

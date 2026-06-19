@@ -1,13 +1,9 @@
-Flask==3.0.0
-Werkzeug==3.0.1
-MarkupSafe>=2.1.0
-mailjet-rest==1.3.4
-
-# PostgreSQL driver and gunicorn are only used for Linux/production deployments
-# (e.g. Render). Local development runs on SQLite and neither of these installs
-# cleanly on Windows, so they are skipped there via environment markers.
-psycopg2-binary==2.9.9 ; sys_platform != "win32"
-gunicorn==21.2.0 ; sys_platform != "win32"
-
-# Windows-friendly production WSGI server (gunicorn is Unix-only).
-waitress==3.0.0 ; sys_platform == "win32"
+bleach==6.1.0
+Flask==3.1.3
+mailjet_rest==1.3.4
+Markdown==3.5.2
+MarkupSafe==3.0.3
+openai==2.43.0
+psycopg2==2.9.12
+PyPDF2==3.0.1
+Werkzeug==3.1.8

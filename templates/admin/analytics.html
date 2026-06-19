@@ -16,12 +16,12 @@
     </div>
     <div class="stat-card">
         <div class="stat-icon">📖</div>
-        <div class="stat-value">{{ stats.courses }}</div>
-        <div class="stat-label">Courses</div>
+        <div class="stat-value">{{ stats.categories }}</div>
+        <div class="stat-label">categories</div>
     </div>
     <div class="stat-card">
         <div class="stat-icon">✅</div>
-        <div class="stat-value">{{ stats.published_courses }}</div>
+        <div class="stat-value">{{ stats.published_categories }}</div>
         <div class="stat-label">Published</div>
     </div>
     <div class="stat-card">
@@ -47,21 +47,21 @@
 </div>
 
 <div class="layout-grid layout-grid-2 mt-2">
-    <!-- Top Courses -->
+    <!-- Top categories -->
     <div class="card">
         <div class="card-header">
-            <h3>📖 Top Courses by Enrollment</h3>
+            <h3>📖 Top categories by Enrollment</h3>
         </div>
-        {% if top_courses %}
+        {% if top_categories %}
         <table style="width: 100%;">
             <thead>
                 <tr>
-                    <th>Course</th>
+                    <th>category</th>
                     <th style="text-align: right;">Employees</th>
                 </tr>
             </thead>
             <tbody>
-                {% for c in top_courses %}
+                {% for c in top_categories %}
                 <tr>
                     <td>{{ c.title }}</td>
                     <td style="text-align: right;">
@@ -72,7 +72,7 @@
             </tbody>
         </table>
         {% else %}
-        <p class="text-muted">No course data available.</p>
+        <p class="text-muted">No category data available.</p>
         {% endif %}
     </div>
     

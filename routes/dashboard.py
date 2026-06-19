@@ -10,12 +10,12 @@ def register_dashboard(app):
         role = session['role']
 
         if role == 'employee':
-            # Get enrolled courses with progress
+            # Get enrolled categories with progress
             enrollments = g.db.execute('''
                 SELECT e.*, c.title, c.description, c.category, c.image_url, u.full_name as admin_name,
-                       (SELECT COUNT(*) FROM lessons WHERE course_id = c.id) as total_lessons
+                       (SELECT COUNT(*) FROM lessons WHERE category_id = c.id) as total_lessons
                 FROM enrollments e
-                JOIN courses c ON e.course_id = c.id
+                JOIN categories c ON e.category_id = c.id
                 JOIN users u ON c.admin_id = u.id
                 WHERE e.employee_id = ?
                 ORDER BY e.enrolled_at DESC
@@ -31,10 +31,10 @@ def register_dashboard(app):
 
             # Upcoming assessments
             assessments = g.db.execute('''
-                SELECT a.*, c.title as course_title
+                SELECT a.*, c.title as category_title
                 FROM assessments a
-                JOIN courses c ON a.course_id = c.id
-                JOIN enrollments e ON e.course_id = c.id
+                JOIN categories c ON a.category_id = c.id
+                JOIN enrollments e ON e.category_id = c.id
                 WHERE e.employee_id = ?
                 AND a.id NOT IN (SELECT assessment_id FROM submissions WHERE employee_id = ?)
                 ORDER BY a.created_at DESC LIMIT 5
@@ -42,9 +42,9 @@ def register_dashboard(app):
 
             # Fetch earned badges
             badges = g.db.execute('''
-                SELECT b.*, c.title as course_title
+                SELECT b.*, c.title as category_title
                 FROM badges b
-                JOIN courses c ON b.course_id = c.id
+                JOIN categories c ON b.category_id = c.id
                 WHERE b.user_id = ?
                 ORDER BY b.awarded_at DESC
             ''', (user_id,)).fetchall()
@@ -89,8 +89,8 @@ def register_dashboard(app):
             stats = {
                 'total_users': g.db.execute('SELECT COUNT(*) FROM users').fetchone()[0],
                 'total_employees': g.db.execute("SELECT COUNT(*) FROM users WHERE role='employee'").fetchone()[0],
-                'total_courses': g.db.execute('SELECT COUNT(*) FROM courses').fetchone()[0],
-                'published_courses': g.db.execute('SELECT COUNT(*) FROM courses WHERE is_published=1').fetchone()[0],
+                'total_categories': g.db.execute('SELECT COUNT(*) FROM categories').fetchone()[0],
+                'published_categories': g.db.execute('SELECT COUNT(*) FROM categories WHERE is_published=1').fetchone()[0],
                 'total_enrollments': g.db.execute('SELECT COUNT(*) FROM enrollments').fetchone()[0],
                 'total_discussions': g.db.execute('SELECT COUNT(*) FROM discussions').fetchone()[0],
                 'total_submissions': g.db.execute('SELECT COUNT(*) FROM submissions').fetchone()[0],
@@ -100,22 +100,22 @@ def register_dashboard(app):
                 SELECT * FROM users ORDER BY created_at DESC LIMIT 10
             ''').fetchall()
             
-            # Get admin's courses
-            courses = g.db.execute('''
+            # Get admin's categories
+            categories = g.db.execute('''
                 SELECT c.*,
-                       (SELECT COUNT(*) FROM enrollments WHERE course_id = c.id) as student_count,
-                       (SELECT COUNT(*) FROM lessons WHERE course_id = c.id) as lesson_count,
-                       (SELECT COUNT(*) FROM discussions WHERE course_id = c.id) as discussion_count
-                FROM courses c WHERE c.admin_id = ?
+                       (SELECT COUNT(*) FROM enrollments WHERE category_id = c.id) as student_count,
+                       (SELECT COUNT(*) FROM lessons WHERE category_id = c.id) as lesson_count,
+                       (SELECT COUNT(*) FROM discussions WHERE category_id = c.id) as discussion_count
+                FROM categories c WHERE c.admin_id = ?
                 ORDER BY c.created_at DESC
             ''', (user_id,)).fetchall()
 
-            # Recent discussions across all courses
+            # Recent discussions across all categories
             recent_discussions = g.db.execute('''
-                SELECT d.*, c.title as course_title, u.full_name as author_name,
+                SELECT d.*, c.title as category_title, u.full_name as author_name,
                        (SELECT COUNT(*) FROM replies WHERE discussion_id = d.id) as reply_count
                 FROM discussions d
-                JOIN courses c ON d.course_id = c.id
+                JOIN categories c ON d.category_id = c.id
                 JOIN users u ON d.user_id = u.id
                 WHERE c.admin_id = ?
                 ORDER BY d.created_at DESC LIMIT 5
@@ -124,5 +124,5 @@ def register_dashboard(app):
             return render_template('dashboard/admin.html',
                                  stats=stats,
                                  recent_users=recent_users,
-                                 courses=courses,
+                                 categories=categories,
                                  recent_discussions=recent_discussions)

@@ -11,17 +11,17 @@ def register_auth(app):
     def index():
         # Get stats for landing page
         stats = {
-            'courses': g.db.execute('SELECT COUNT(*) FROM courses WHERE is_published = 1').fetchone()[0],
+            'categories': g.db.execute('SELECT COUNT(*) FROM categories WHERE is_published = 1').fetchone()[0],
             'students': g.db.execute("SELECT COUNT(*) FROM users WHERE role = 'student'").fetchone()[0],
             'lecturers': g.db.execute("SELECT COUNT(*) FROM users WHERE role = 'lecturer'").fetchone()[0],
         }
 
-        # Get featured courses
+        # Get featured categories
         featured = g.db.execute('''
             SELECT c.*, u.full_name as admin_name,
-                   (SELECT COUNT(*) FROM enrollments WHERE course_id = c.id) as student_count,
-                   (SELECT COUNT(*) FROM lessons WHERE course_id = c.id) as lesson_count
-            FROM courses c JOIN users u ON c.admin_id = u.id
+                   (SELECT COUNT(*) FROM enrollments WHERE category_id = c.id) as student_count,
+                   (SELECT COUNT(*) FROM lessons WHERE category_id = c.id) as lesson_count
+            FROM categories c JOIN users u ON c.admin_id = u.id
             WHERE c.is_published = 1
             ORDER BY c.created_at DESC LIMIT 6
         ''').fetchall()
@@ -112,51 +112,8 @@ def register_auth(app):
             return redirect(url_for('dashboard'))
 
         if request.method == 'POST':
-            full_name = request.form.get('full_name', '').strip()
-            username = request.form.get('username', '').strip().lower()
-            email = request.form.get('email', '').strip().lower()
-            phone = request.form.get('phone', '').strip()
-            password = request.form.get('password', '')
-            confirm = request.form.get('confirm_password', '')
-            role = 'employee'
-
-            errors = []
-            if not full_name or not username or not email or not password:
-                errors.append('All required fields must be filled.')
-            if password != confirm:
-                errors.append('Passwords do not match.')
-            if len(password) < 6:
-                errors.append('Password must be at least 6 characters.')
-
-            # Check uniqueness
-            existing = g.db.execute('SELECT id FROM users WHERE username = ? OR email = ?',
-                                   (username, email)).fetchone()
-            if existing:
-                errors.append('Username or email already exists.')
-
-            if errors:
-                for e in errors:
-                    flash(e, 'danger')
-            else:
-                is_verified = 1
-                profile_pic = ''
-                
-                g.db.execute(
-                    'INSERT INTO users (username, email, password_hash, role, full_name, phone, is_verified, profile_pic_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-                    (username, email, generate_password_hash(password), role, full_name, phone, is_verified, profile_pic)
-                )
-                g.db.commit()
-                
-                # Send welcome email
-                send_notification_email(
-                    subject="Welcome to SurePay!",
-                    text_part=f"Hello {full_name}, welcome to SurePay! Your account as a {role} has been created.",
-                    html_part=f"<h3>Welcome to SurePay!</h3><p>Hello <b>{full_name}</b>, welcome to SurePay!</p><p>Your account as a <b>{role}</b> has been created successfully.</p>",
-                    specific_emails=[{"Email": email, "Name": full_name}]
-                )
-                
-                flash('Registration successful! You can now log in.', 'success')
-                return redirect(url_for('login'))
+            flash('Self-registration is currently disabled. Please contact the administrator to create an account.', 'danger')
+            return redirect(url_for('register'))
 
         return render_template('auth/register.html')
 

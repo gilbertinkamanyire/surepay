@@ -40,19 +40,19 @@ def init_db():
                 reset_token_expiry TIMESTAMP
             );
             
-            CREATE TABLE IF NOT EXISTS departments (
+            CREATE TABLE IF NOT EXISTS systems (
                 id SERIAL PRIMARY KEY,
                 name TEXT UNIQUE NOT NULL,
                 description TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
             
-            CREATE TABLE IF NOT EXISTS courses (
+            CREATE TABLE IF NOT EXISTS categories (
                 id SERIAL PRIMARY KEY,
                 title TEXT NOT NULL,
                 description TEXT,
                 admin_id INTEGER NOT NULL REFERENCES users(id),
-                department_id INTEGER REFERENCES departments(id),
+                system_id INTEGER REFERENCES systems(id),
                 category TEXT DEFAULT 'General',
                 image_url TEXT DEFAULT '',
                 is_published INTEGER DEFAULT 0,
@@ -61,7 +61,7 @@ def init_db():
             
             CREATE TABLE IF NOT EXISTS lessons (
                 id SERIAL PRIMARY KEY,
-                course_id INTEGER NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+                category_id INTEGER NOT NULL REFERENCES categories(id) ON DELETE CASCADE,
                 title TEXT NOT NULL,
                 content TEXT NOT NULL,
                 attachment_url TEXT DEFAULT '',
@@ -74,12 +74,12 @@ def init_db():
             CREATE TABLE IF NOT EXISTS enrollments (
                 id SERIAL PRIMARY KEY,
                 employee_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-                course_id INTEGER NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+                category_id INTEGER NOT NULL REFERENCES categories(id) ON DELETE CASCADE,
                 enrolled_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 progress REAL DEFAULT 0.0,
                 participation_points INTEGER DEFAULT 0,
                 last_lesson_id INTEGER DEFAULT NULL,
-                UNIQUE(employee_id, course_id)
+                UNIQUE(employee_id, category_id)
             );
             
             CREATE TABLE IF NOT EXISTS lesson_progress (
@@ -93,7 +93,7 @@ def init_db():
             
             CREATE TABLE IF NOT EXISTS assessments (
                 id SERIAL PRIMARY KEY,
-                course_id INTEGER NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+                category_id INTEGER NOT NULL REFERENCES categories(id) ON DELETE CASCADE,
                 lesson_id INTEGER REFERENCES lessons(id),
                 title TEXT NOT NULL,
                 description TEXT DEFAULT '',
@@ -108,7 +108,7 @@ def init_db():
             CREATE TABLE IF NOT EXISTS attendance (
                 id SERIAL PRIMARY KEY,
                 user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-                course_id INTEGER NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+                category_id INTEGER NOT NULL REFERENCES categories(id) ON DELETE CASCADE,
                 lesson_id INTEGER REFERENCES lessons(id) ON DELETE CASCADE,
                 activity_type TEXT NOT NULL,
                 timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -131,12 +131,13 @@ def init_db():
                 answers_json TEXT NOT NULL DEFAULT '{}',
                 score REAL DEFAULT 0,
                 max_score REAL DEFAULT 0,
+                attempt_number INTEGER DEFAULT 1,
                 submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
             
             CREATE TABLE IF NOT EXISTS discussions (
                 id SERIAL PRIMARY KEY,
-                course_id INTEGER NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+                category_id INTEGER NOT NULL REFERENCES categories(id) ON DELETE CASCADE,
                 user_id INTEGER NOT NULL REFERENCES users(id),
                 title TEXT NOT NULL,
                 content TEXT NOT NULL,
@@ -165,7 +166,7 @@ def init_db():
             CREATE TABLE IF NOT EXISTS learning_insights (
                 id SERIAL PRIMARY KEY,
                 user_id INTEGER NOT NULL REFERENCES users(id),
-                course_id INTEGER REFERENCES courses(id),
+                category_id INTEGER REFERENCES categories(id),
                 insight_type TEXT NOT NULL,
                 content TEXT NOT NULL,
                 relevance_score REAL DEFAULT 1.0,
@@ -176,13 +177,13 @@ def init_db():
                 id SERIAL PRIMARY KEY,
                 user_a_id INTEGER NOT NULL REFERENCES users(id),
                 user_b_id INTEGER NOT NULL REFERENCES users(id),
-                course_id INTEGER NOT NULL REFERENCES courses(id),
+                category_id INTEGER NOT NULL REFERENCES categories(id),
                 match_reason TEXT NOT NULL,
                 meeting_link TEXT,
                 sync_log TEXT DEFAULT '',
                 is_active INTEGER DEFAULT 1,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                UNIQUE(user_a_id, user_b_id, course_id)
+                UNIQUE(user_a_id, user_b_id, category_id)
             );
 
             CREATE TABLE IF NOT EXISTS lesson_qa (
@@ -203,10 +204,10 @@ def init_db():
             CREATE TABLE IF NOT EXISTS badges (
                 id SERIAL PRIMARY KEY,
                 user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-                course_id INTEGER NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+                category_id INTEGER NOT NULL REFERENCES categories(id) ON DELETE CASCADE,
                 badge_type TEXT DEFAULT 'completion',
                 awarded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                UNIQUE(user_id, course_id, badge_type)
+                UNIQUE(user_id, category_id, badge_type)
             );
 
             CREATE TABLE IF NOT EXISTS platform_settings (
@@ -219,12 +220,12 @@ def init_db():
         # Create indexes (ignore if exists)
         indexes = [
             "CREATE INDEX IF NOT EXISTS idx_attendance_user ON attendance(user_id)",
-            "CREATE INDEX IF NOT EXISTS idx_attendance_course ON attendance(course_id)",
+            "CREATE INDEX IF NOT EXISTS idx_attendance_category ON attendance(category_id)",
             "CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id)",
             "CREATE INDEX IF NOT EXISTS idx_enrollments_employee ON enrollments(employee_id)",
-            "CREATE INDEX IF NOT EXISTS idx_enrollments_course ON enrollments(course_id)",
-            "CREATE INDEX IF NOT EXISTS idx_lessons_course ON lessons(course_id)",
-            "CREATE INDEX IF NOT EXISTS idx_discussions_course ON discussions(course_id)",
+            "CREATE INDEX IF NOT EXISTS idx_enrollments_category ON enrollments(category_id)",
+            "CREATE INDEX IF NOT EXISTS idx_lessons_category ON lessons(category_id)",
+            "CREATE INDEX IF NOT EXISTS idx_discussions_category ON discussions(category_id)",
             "CREATE INDEX IF NOT EXISTS idx_submissions_employee ON submissions(employee_id)",
             "CREATE INDEX IF NOT EXISTS idx_lesson_progress_employee ON lesson_progress(employee_id)",
         ]
@@ -258,30 +259,30 @@ def init_db():
                 reset_token_expiry TIMESTAMP
             );
             
-            CREATE TABLE IF NOT EXISTS departments (
+            CREATE TABLE IF NOT EXISTS systems (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT UNIQUE NOT NULL,
                 description TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
             
-            CREATE TABLE IF NOT EXISTS courses (
+            CREATE TABLE IF NOT EXISTS categories (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 title TEXT NOT NULL,
                 description TEXT,
                 admin_id INTEGER NOT NULL,
-                department_id INTEGER,
+                system_id INTEGER,
                 category TEXT DEFAULT 'General',
                 image_url TEXT DEFAULT '',
                 is_published INTEGER DEFAULT 0,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (admin_id) REFERENCES users(id),
-                FOREIGN KEY (department_id) REFERENCES departments(id)
+                FOREIGN KEY (system_id) REFERENCES systems(id)
             );
             
             CREATE TABLE IF NOT EXISTS lessons (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                course_id INTEGER NOT NULL,
+                category_id INTEGER NOT NULL,
                 title TEXT NOT NULL,
                 content TEXT NOT NULL,
                 attachment_url TEXT DEFAULT '',
@@ -289,20 +290,20 @@ def init_db():
                 order_num INTEGER DEFAULT 1,
                 is_hidden INTEGER DEFAULT 0,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
+                FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
             );
             
             CREATE TABLE IF NOT EXISTS enrollments (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 employee_id INTEGER NOT NULL,
-                course_id INTEGER NOT NULL,
+                category_id INTEGER NOT NULL,
                 enrolled_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 progress REAL DEFAULT 0.0,
                 participation_points INTEGER DEFAULT 0,
                 last_lesson_id INTEGER DEFAULT NULL,
                 FOREIGN KEY (employee_id) REFERENCES users(id) ON DELETE CASCADE,
-                FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
-                UNIQUE(employee_id, course_id)
+                FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE,
+                UNIQUE(employee_id, category_id)
             );
             
             CREATE TABLE IF NOT EXISTS lesson_progress (
@@ -318,7 +319,7 @@ def init_db():
             
             CREATE TABLE IF NOT EXISTS assessments (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                course_id INTEGER NOT NULL,
+                category_id INTEGER NOT NULL,
                 lesson_id INTEGER,
                 title TEXT NOT NULL,
                 description TEXT DEFAULT '',
@@ -328,19 +329,19 @@ def init_db():
                 is_hidden INTEGER DEFAULT 0,
                 available_until TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
+                FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE,
                 FOREIGN KEY (lesson_id) REFERENCES lessons(id)
             );
  
             CREATE TABLE IF NOT EXISTS attendance (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_id INTEGER NOT NULL,
-                course_id INTEGER NOT NULL,
+                category_id INTEGER NOT NULL,
                 lesson_id INTEGER,
                 activity_type TEXT NOT NULL,
                 timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-                FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
+                FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE,
                 FOREIGN KEY (lesson_id) REFERENCES lessons(id) ON DELETE CASCADE
             );
  
@@ -356,7 +357,7 @@ def init_db():
             );
  
             CREATE INDEX IF NOT EXISTS idx_attendance_user ON attendance(user_id);
-            CREATE INDEX IF NOT EXISTS idx_attendance_course ON attendance(course_id);
+            CREATE INDEX IF NOT EXISTS idx_attendance_category ON attendance(category_id);
             CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id);
             
             CREATE TABLE IF NOT EXISTS submissions (
@@ -366,6 +367,7 @@ def init_db():
                 answers_json TEXT NOT NULL DEFAULT '{}',
                 score REAL DEFAULT 0,
                 max_score REAL DEFAULT 0,
+                attempt_number INTEGER DEFAULT 1,
                 submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON DELETE CASCADE,
                 FOREIGN KEY (employee_id) REFERENCES users(id) ON DELETE CASCADE
@@ -373,12 +375,12 @@ def init_db():
             
             CREATE TABLE IF NOT EXISTS discussions (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                course_id INTEGER NOT NULL,
+                category_id INTEGER NOT NULL,
                 user_id INTEGER NOT NULL,
                 title TEXT NOT NULL,
                 content TEXT NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
+                FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE,
                 FOREIGN KEY (user_id) REFERENCES users(id)
             );
 
@@ -414,20 +416,20 @@ def init_db():
             CREATE TABLE IF NOT EXISTS learning_insights (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_id INTEGER NOT NULL,
-                course_id INTEGER,
+                category_id INTEGER,
                 insight_type TEXT NOT NULL,
                 content TEXT NOT NULL,
                 relevance_score REAL DEFAULT 1.0,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (user_id) REFERENCES users(id),
-                FOREIGN KEY (course_id) REFERENCES courses(id)
+                FOREIGN KEY (category_id) REFERENCES categories(id)
             );
  
             CREATE TABLE IF NOT EXISTS synergy_matches (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_a_id INTEGER NOT NULL,
                 user_b_id INTEGER NOT NULL,
-                course_id INTEGER NOT NULL,
+                category_id INTEGER NOT NULL,
                 match_reason TEXT NOT NULL,
                 meeting_link TEXT,
                 sync_log TEXT DEFAULT '',
@@ -435,8 +437,8 @@ def init_db():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (user_a_id) REFERENCES users(id),
                 FOREIGN KEY (user_b_id) REFERENCES users(id),
-                FOREIGN KEY (course_id) REFERENCES courses(id),
-                UNIQUE(user_a_id, user_b_id, course_id)
+                FOREIGN KEY (category_id) REFERENCES categories(id),
+                UNIQUE(user_a_id, user_b_id, category_id)
             );
  
             CREATE TABLE IF NOT EXISTS user_preferences (
@@ -449,12 +451,12 @@ def init_db():
             CREATE TABLE IF NOT EXISTS badges (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_id INTEGER NOT NULL,
-                course_id INTEGER NOT NULL,
+                category_id INTEGER NOT NULL,
                 badge_type TEXT DEFAULT 'completion',
                 awarded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-                FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
-                UNIQUE(user_id, course_id, badge_type)
+                FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE,
+                UNIQUE(user_id, category_id, badge_type)
             );
 
             CREATE TABLE IF NOT EXISTS platform_settings (
@@ -464,9 +466,9 @@ def init_db():
             );
  
             CREATE INDEX IF NOT EXISTS idx_enrollments_employee ON enrollments(employee_id);
-            CREATE INDEX IF NOT EXISTS idx_enrollments_course ON enrollments(course_id);
-            CREATE INDEX IF NOT EXISTS idx_lessons_course ON lessons(course_id);
-            CREATE INDEX IF NOT EXISTS idx_discussions_course ON discussions(course_id);
+            CREATE INDEX IF NOT EXISTS idx_enrollments_category ON enrollments(category_id);
+            CREATE INDEX IF NOT EXISTS idx_lessons_category ON lessons(category_id);
+            CREATE INDEX IF NOT EXISTS idx_discussions_category ON discussions(category_id);
             CREATE INDEX IF NOT EXISTS idx_submissions_employee ON submissions(employee_id);
             CREATE INDEX IF NOT EXISTS idx_lesson_progress_employee ON lesson_progress(employee_id);
         ''')
@@ -491,17 +493,17 @@ def seed_db():
     # Create admin user  (Credentials: admin / admin123)
     db.execute(
         'INSERT INTO users (username, email, password_hash, role, full_name, phone) VALUES (?, ?, ?, ?, ?, ?)',
-        ('admin', 'admin@learnug.com', generate_password_hash('admin123'), 'admin', 'System Administrator', '+256700000001')
+        ('admin', 'admin@learnug.com', generate_password_hash('admin123'), 'admin', 'system Administrator', '+256700000001')
     )
     
-    # Create default business system departments
+    # Create default business system systems
     for name, desc in [
-        ('SIMS', 'Student Information Management System — training for SIMS users'),
-        ('CMS', 'Content Management System — training for CMS users'),
-        ('PMS', 'Project/Performance Management System — training for PMS users'),
-        ('Core Banking', 'Core Banking System — training for banking platform users'),
+        ('SIMS', 'Student Information Management system — training for SIMS users'),
+        ('CMS', 'Content Management system — training for CMS users'),
+        ('PMS', 'Project/Performance Management system — training for PMS users'),
+        ('Core Banking', 'Core Banking system — training for banking platform users'),
     ]:
-        db.execute('INSERT INTO departments (name, description) VALUES (?, ?)', (name, desc))
+        db.execute('INSERT INTO systems (name, description) VALUES (?, ?)', (name, desc))
     
     db.commit()
     db.close()

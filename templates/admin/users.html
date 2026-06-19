@@ -21,15 +21,15 @@
                     <option value="employee" {% if role_filter == 'employee' %}selected{% endif %}>Employees</option>
                     <option value="admin" {% if role_filter == 'admin' %}selected{% endif %}>Admins</option>
                 </select>
-                <select name="dept" class="form-select">
-                    <option value="">All Departments</option>
-                    {% for dept in departments %}
-                    <option value="{{ dept.id }}" {% if dept_filter == dept.id %}selected{% endif %}>{{ dept.name }}</option>
+                <select name="cat" class="form-select">
+                    <option value="">All systems</option>
+                    {% for cat in systems %}
+                    <option value="{{ cat.id }}" {% if cat_filter == cat.id %}selected{% endif %}>{{ cat.name }}</option>
                     {% endfor %}
                 </select>
                 <div class="btn-group">
                     <button type="submit" class="btn btn-primary">Search</button>
-                    {% if search or role_filter or dept_filter %}
+                    {% if search or role_filter or cat_filter %}
                     <a href="{{ url_for('admin_users') }}" class="btn btn-secondary">Clear</a>
                     {% endif %}
                 </div>
@@ -63,7 +63,7 @@
             <form action="{{ url_for('admin_clear_role', role='employee') }}" method="POST" onsubmit="return confirm('DELETE ALL STUDENTS? This action is IRREVERSIBLE. Proceed?');" style="flex: 1;">
                 <button type="submit" class="btn btn-outline" style="width: 100%; border-color: #ef4444; color: #ef4444;">Clear All Employees</button>
             </form>
-            <form action="{{ url_for('admin_clear_role', role='admin') }}" method="POST" onsubmit="return confirm('DELETE ALL ADMINS? This will also remove their courses and materials. IRREVERSIBLE. Proceed?');" style="flex: 1;">
+            <form action="{{ url_for('admin_clear_role', role='admin') }}" method="POST" onsubmit="return confirm('DELETE ALL ADMINS? This will also remove their categories and materials. IRREVERSIBLE. Proceed?');" style="flex: 1;">
                 <button type="submit" class="btn btn-outline" style="width: 100%; border-color: #ef4444; color: #ef4444;">Clear All Admins</button>
             </form>
         </div>

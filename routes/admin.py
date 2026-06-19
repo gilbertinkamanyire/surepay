@@ -13,13 +13,13 @@ def register_admin(app):
     def admin_users():
         role_filter = request.args.get('role', '')
         search = request.args.get('search', '').strip()
-        dept_filter = request.args.get('dept', type=int)
+        cat_filter = request.args.get('cat', type=int)
 
-        # Fetch departments for the dropdown
+        # Fetch systems for the dropdown
         try:
-            departments = g.db.execute('SELECT id, name FROM departments ORDER BY name').fetchall()
+            systems = g.db.execute('SELECT id, name FROM systems ORDER BY name').fetchall()
         except Exception:
-            departments = []
+            systems = []
 
         query = 'SELECT u.* FROM users u WHERE 1=1'
         params = []
@@ -32,20 +32,20 @@ def register_admin(app):
             query += ' AND (u.full_name LIKE ? OR u.username LIKE ? OR u.email LIKE ?)'
             params.extend([f'%{search}%', f'%{search}%', f'%{search}%'])
 
-        if dept_filter:
-            # Filter employees whose enrolled courses belong to the selected department
+        if cat_filter:
+            # Filter employees whose enrolled categories belong to the selected system
             query += ''' AND u.id IN (
                 SELECT DISTINCT e.employee_id FROM enrollments e
-                JOIN courses c ON e.course_id = c.id
-                WHERE c.department_id = ?
+                JOIN categories c ON e.category_id = c.id
+                WHERE c.system_id = ?
             )'''
-            params.append(dept_filter)
+            params.append(cat_filter)
 
         query += ' ORDER BY u.created_at DESC'
         users = g.db.execute(query, params).fetchall()
 
         return render_template('admin/users.html', users=users, role_filter=role_filter,
-                               search=search, departments=departments, dept_filter=dept_filter)
+                               search=search, systems=systems, cat_filter=cat_filter)
 
 
     @app.route('/admin/users/<int:user_id>/verify', methods=['POST'])
@@ -60,8 +60,8 @@ def register_admin(app):
             # Notify the admin
             send_notification_email(
                 subject="Account Verified: Admin Access Granted",
-                text_part="Your admin account has been verified. You can now log in and manage courses.",
-                html_part="<h3>Account Verified</h3><p>Your admin account has been verified. You can now log in and manage courses.</p>",
+                text_part="Your admin account has been verified. You can now log in and manage categories.",
+                html_part="<h3>Account Verified</h3><p>Your admin account has been verified. You can now log in and manage categories.</p>",
                 specific_emails=[{"Email": user['email'], "Name": user['full_name']}] if 'email' in user.keys() else []
             )
         return redirect(url_for('admin_users'))
@@ -120,16 +120,16 @@ def register_admin(app):
                 return redirect(url_for('admin_users'))
                 
             if user['role'] == 'lecturer' or user['role'] == 'admin':
-                courses = g.db.execute('SELECT id FROM courses WHERE admin_id = ?', (user_id,)).fetchall()
-                for c in courses:
+                categories = g.db.execute('SELECT id FROM categories WHERE admin_id = ?', (user_id,)).fetchall()
+                for c in categories:
                     cid = c['id']
-                    g.db.execute('DELETE FROM lessons WHERE course_id=?', (cid,))
-                    g.db.execute('DELETE FROM submissions WHERE assessment_id IN (SELECT id FROM assessments WHERE course_id=?)', (cid,))
-                    g.db.execute('DELETE FROM assessments WHERE course_id=?', (cid,))
-                    g.db.execute('DELETE FROM enrollments WHERE course_id=?', (cid,))
-                    g.db.execute('DELETE FROM attendance WHERE course_id=?', (cid,))
-                    g.db.execute('DELETE FROM discussions WHERE course_id=?', (cid,))
-                g.db.execute('DELETE FROM courses WHERE admin_id = ?', (user_id,))
+                    g.db.execute('DELETE FROM lessons WHERE category_id=?', (cid,))
+                    g.db.execute('DELETE FROM submissions WHERE assessment_id IN (SELECT id FROM assessments WHERE category_id=?)', (cid,))
+                    g.db.execute('DELETE FROM assessments WHERE category_id=?', (cid,))
+                    g.db.execute('DELETE FROM enrollments WHERE category_id=?', (cid,))
+                    g.db.execute('DELETE FROM attendance WHERE category_id=?', (cid,))
+                    g.db.execute('DELETE FROM discussions WHERE category_id=?', (cid,))
+                g.db.execute('DELETE FROM categories WHERE admin_id = ?', (user_id,))
                 
             g.db.execute('DELETE FROM discussions WHERE user_id = ?', (user_id,))
             g.db.execute('DELETE FROM replies WHERE user_id = ?', (user_id,))
@@ -215,12 +215,12 @@ def register_admin(app):
         g.db.execute(f'DELETE FROM learning_insights WHERE user_id IN ({placeholders})', user_ids)
         
         if role == 'admin':
-            # Handle lecturer's courses
-            courses = g.db.execute(f'SELECT id FROM courses WHERE admin_id IN ({placeholders})', user_ids).fetchall()
-            if courses:
-                course_ids = [c['id'] for c in courses]
-                c_placeholders = ', '.join(['?'] * len(course_ids))
-                g.db.execute(f'DELETE FROM courses WHERE id IN ({c_placeholders})', course_ids)
+            # Handle lecturer's categories
+            categories = g.db.execute(f'SELECT id FROM categories WHERE admin_id IN ({placeholders})', user_ids).fetchall()
+            if categories:
+                category_ids = [c['id'] for c in categories]
+                c_placeholders = ', '.join(['?'] * len(category_ids))
+                g.db.execute(f'DELETE FROM categories WHERE id IN ({c_placeholders})', category_ids)
 
         # Delete users
         g.db.execute(f'DELETE FROM users WHERE id IN ({placeholders})', user_ids)
@@ -238,14 +238,14 @@ def register_admin(app):
         return redirect(url_for('admin_users'))
 
 
-    @app.route('/admin/courses/<int:course_id>/clear-enrollments', methods=['POST'])
+    @app.route('/admin/categories/<int:category_id>/clear-enrollments', methods=['POST'])
     @role_required('admin')
-    def admin_clear_course_enrollments(course_id):
-        g.db.execute('DELETE FROM enrollments WHERE course_id = ?', (course_id,))
-        g.db.execute('DELETE FROM lesson_progress WHERE lesson_id IN (SELECT id FROM lessons WHERE course_id = ?)', (course_id,))
-        g.db.execute('DELETE FROM submissions WHERE assessment_id IN (SELECT id FROM assessments WHERE course_id = ?)', (course_id,))
+    def admin_clear_category_enrollments(category_id):
+        g.db.execute('DELETE FROM enrollments WHERE category_id = ?', (category_id,))
+        g.db.execute('DELETE FROM lesson_progress WHERE lesson_id IN (SELECT id FROM lessons WHERE category_id = ?)', (category_id,))
+        g.db.execute('DELETE FROM submissions WHERE assessment_id IN (SELECT id FROM assessments WHERE category_id = ?)', (category_id,))
         g.db.commit()
-        flash('All student enrollments and progress for this course have been cleared.', 'warning')
+        flash('All student enrollments and progress for this category have been cleared.', 'warning')
         return redirect(request.referrer or url_for('admin_analytics'))
 
 
@@ -288,18 +288,18 @@ def register_admin(app):
             'total_users': g.db.execute('SELECT COUNT(*) FROM users').fetchone()[0],
             'students': g.db.execute("SELECT COUNT(*) FROM users WHERE role='student'").fetchone()[0],
             'lecturers': g.db.execute("SELECT COUNT(*) FROM users WHERE role='lecturer'").fetchone()[0],
-            'courses': g.db.execute('SELECT COUNT(*) FROM courses').fetchone()[0],
-            'published_courses': g.db.execute('SELECT COUNT(*) FROM courses WHERE is_published=1').fetchone()[0],
+            'categories': g.db.execute('SELECT COUNT(*) FROM categories').fetchone()[0],
+            'published_categories': g.db.execute('SELECT COUNT(*) FROM categories WHERE is_published=1').fetchone()[0],
             'enrollments': g.db.execute('SELECT COUNT(*) FROM enrollments').fetchone()[0],
             'lessons': g.db.execute('SELECT COUNT(*) FROM lessons').fetchone()[0],
             'discussions': g.db.execute('SELECT COUNT(*) FROM discussions').fetchone()[0],
             'submissions': g.db.execute('SELECT COUNT(*) FROM submissions').fetchone()[0],
         }
 
-        # Top courses by enrollment
-        top_courses = g.db.execute('''
+        # Top categories by enrollment
+        top_categories = g.db.execute('''
             SELECT c.title, COUNT(e.id) as enrollments
-            FROM courses c LEFT JOIN enrollments e ON c.id = e.course_id
+            FROM categories c LEFT JOIN enrollments e ON c.id = e.category_id
             GROUP BY c.id ORDER BY enrollments DESC LIMIT 10
         ''').fetchall()
 
@@ -308,18 +308,18 @@ def register_admin(app):
             SELECT role, COUNT(*) as count FROM users GROUP BY role
         ''').fetchall()
 
-        return render_template('admin/analytics.html', stats=stats, top_courses=top_courses, roles=roles)
+        return render_template('admin/analytics.html', stats=stats, top_categories=top_categories, roles=roles)
 
 
     @app.route('/admin/employee-progress')
     @role_required('admin')
     def admin_employee_progress():
         search = request.args.get('search', '').strip()
-        dept_filter = request.args.get('dept', type=int)
+        cat_filter = request.args.get('cat', type=int)
         try:
-            departments = g.db.execute('SELECT id, name FROM departments ORDER BY name').fetchall()
+            systems = g.db.execute('SELECT id, name FROM systems ORDER BY name').fetchall()
         except Exception:
-            departments = []
+            systems = []
 
         total_employees = 0
         completed_count = 0
@@ -333,25 +333,25 @@ def register_admin(app):
             q = '''
                 SELECT u.full_name, u.email,
                        d.name AS system_name,
-                       c.title AS course_title,
+                       c.title AS category_title,
                        e.progress AS progress,
                        e.enrolled_at AS enrolled_at,
-                       (SELECT COUNT(*) FROM lessons WHERE course_id = c.id) as total_lessons,
-                       (SELECT COUNT(*) FROM lesson_progress lp JOIN lessons l ON lp.lesson_id = l.id WHERE lp.employee_id = u.id AND l.course_id = c.id AND lp.completed = 1) as completed_lessons,
-                       (SELECT awarded_at FROM badges WHERE user_id = u.id AND course_id = c.id ORDER BY awarded_at DESC LIMIT 1) as badge_date
+                       (SELECT COUNT(*) FROM lessons WHERE category_id = c.id) as total_lessons,
+                       (SELECT COUNT(*) FROM lesson_progress lp JOIN lessons l ON lp.lesson_id = l.id WHERE lp.employee_id = u.id AND l.category_id = c.id AND lp.completed = 1) as completed_lessons,
+                       (SELECT awarded_at FROM badges WHERE user_id = u.id AND category_id = c.id ORDER BY awarded_at DESC LIMIT 1) as badge_date
                 FROM enrollments e
                 JOIN users u ON e.employee_id = u.id
-                LEFT JOIN courses c ON e.course_id = c.id
-                LEFT JOIN departments d ON c.department_id = d.id
+                LEFT JOIN categories c ON e.category_id = c.id
+                LEFT JOIN systems d ON c.system_id = d.id
                 WHERE 1=1
             '''
             params = []
             if search:
                 q += ' AND (u.full_name LIKE ? OR u.email LIKE ?)'
                 params.extend([f'%{search}%', f'%{search}%'])
-            if dept_filter:
+            if cat_filter:
                 q += ' AND d.id = ?'
-                params.append(dept_filter)
+                params.append(cat_filter)
             q += ' ORDER BY u.full_name, c.title'
             records = g.db.execute(q, params).fetchall()
 
@@ -366,8 +366,8 @@ def register_admin(app):
                                total_employees=total_employees,
                                completed_count=completed_count,
                                records=records,
-                               departments=departments,
-                               dept_filter=dept_filter,
+                               systems=systems,
+                               cat_filter=cat_filter,
                                search=search)
 
 
@@ -419,6 +419,13 @@ def register_admin(app):
                         g.db.execute('INSERT OR REPLACE INTO platform_settings (key, value) VALUES (?, ?)', ('terms_version', new_version))
                         flash(f'Terms updated to version {new_version}. All users will be asked to re-accept.', 'info')
 
+                # Static Pages
+                for key in ['privacy_content', 'about_content', 'help_content', 'how_it_works_content']:
+                    val = request.form.get(key)
+                    if val is not None:
+                        val = val.strip()
+                        g.db.execute('INSERT OR REPLACE INTO platform_settings (key, value) VALUES (?, ?)', (key, val))
+
                 g.db.commit()
                 flash('Settings saved.', 'success')
             except Exception as e:
@@ -454,7 +461,7 @@ def register_admin(app):
     @app.route('/admin/clear-lecturer-dashboards', methods=['POST'])
     @role_required('admin')
     def admin_clear_lecturer_dashboards():
-        """Clear all lecturer dashboard data: courses, lessons, assessments, assignments, discussions."""
+        """Clear all lecturer dashboard data: categories, lessons, assessments, assignments, discussions."""
         try:
             # Delete in dependency order
             g.db.execute('DELETE FROM assignment_submissions')
@@ -467,9 +474,9 @@ def register_admin(app):
             g.db.execute('DELETE FROM assessments')
             g.db.execute('DELETE FROM assignments')
             g.db.execute('DELETE FROM lessons')
-            g.db.execute('DELETE FROM courses')
+            g.db.execute('DELETE FROM categories')
             g.db.commit()
-            flash('All lecturer dashboard data (courses, lessons, assessments, assignments, discussions) has been cleared.', 'warning')
+            flash('All lecturer dashboard data (categories, lessons, assessments, assignments, discussions) has been cleared.', 'warning')
         except Exception as e:
             flash(f'Error clearing lecturer data: {str(e)}', 'danger')
         return redirect(url_for('dashboard'))

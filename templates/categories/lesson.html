@@ -1,0 +1,239 @@
+{% extends 'base.html' %}
+{% block title %}{{ lesson.title }}{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+    <a href="{{ url_for('categories_list') }}">categories</a>
+    <span class="breadcrumb-sep">›</span>
+    <a href="{{ url_for('category_detail', category_id=category.id) }}">{{ category.title }}</a>
+    <span class="breadcrumb-sep">›</span>
+    <span>{{ lesson.title }}</span>
+</div>
+
+<div class="layout-grid layout-grid-sidebar">
+    <!-- Sidebar -->
+    <div>
+        <div class="lesson-sidebar">
+            <h3 style="font-size: 0.9rem; margin-bottom: 0.75rem;">📖 {{ _('category Lessons') }}</h3>
+            {% for l in all_lessons %}
+            <a href="{{ url_for('view_lesson', category_id=category.id, lesson_id=l.id) }}" style="text-decoration: none;">
+                <div class="lesson-sidebar-item {% if l.id == lesson.id %}active{% endif %}">
+                    <div class="check">
+                        {% if l.id == lesson.id %}►{% else %}{{ loop.index }}{% endif %}
+                    </div>
+                    <span>{{ l.title }}</span>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+
+        <div style="margin-top: 1rem;">
+            <a href="{{ url_for('category_detail', category_id=category.id) }}" class="btn btn-sm btn-secondary btn-block">← {{ _('Back to category') }}</a>
+        </div>
+    </div>
+    
+    <!-- Main Content -->
+    <div>
+        <div class="flex-between mb-2" style="flex-wrap: wrap; gap: 1rem;">
+            <h1 style="font-size: 1.4rem;">{{ lesson.title }}</h1>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
+                <button type="button" class="btn btn-sm btn-outline" onclick="sharePage('{{ lesson.title }}')">🔗 {{ _('Share') }}</button>
+                <form method="POST" action="{{ url_for('toggle_bookmark', category_id=category.id, lesson_id=lesson.id) }}" style="display:inline; margin-left: 0.25rem;">
+                    <button type="submit" class="btn btn-sm {% if bookmarked %}btn-primary{% else %}btn-outline{% endif %}">
+                        {% if bookmarked %}🔖 Bookmarked{% else %}🔖 Bookmark{% endif %}
+                    </button>
+                </form>
+                {% if session.role in ('admin', 'admin') %}
+                <div class="btn-group">
+                    <a href="{{ url_for('edit_lesson', category_id=category.id, lesson_id=lesson.id) }}" class="btn btn-sm btn-outline">✏️ {{ _('Edit') }}</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Lesson Content -->
+        <div class="lesson-content">
+            {{ lesson.content|markdown|safe }}
+            
+            {% if lesson.attachment_url %}
+            <div style="margin-top: 2rem; padding: 1.25rem; background: var(--bg-input); border: 1px solid var(--border); border-radius: var(--radius-lg);">
+                <h3 style="font-size: 1.05rem; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                    {% if lesson.attachment_type in ['mp4', 'webm', 'mov'] %}<i class='bx bxs-videos'></i> Training Video
+                    {% else %}<i class='bx bxs-file'></i> {{ _('Attached Resource') }}{% endif %}
+                </h3>
+                {% if session.bandwidth_mode in ('low', 'ultra') %}
+                    <div style="margin-bottom: 0.75rem; color: var(--text-muted);">
+                        {% if session.bandwidth_mode == 'ultra' %}
+                            {{ _('Low-data mode is active. Attachments are available as downloads only.') }}
+                        {% else %}
+                            {{ _('Low-data mode is active. Video preview is deferred until you choose to load it.') }}
+                        {% endif %}
+                    </div>
+                {% endif %}
+                {% if lesson.attachment_type in ['mp4', 'webm', 'mov'] %}
+                    {% if session.bandwidth_mode == 'ultra' %}
+                        <a href="{{ url_for('download_resource', category_id=category.id, lesson_id=lesson.id) }}" class="btn btn-outline">
+                            💾 {{ _('Download video') }} ({{ lesson.attachment_type|upper }})
+                        </a>
+                    {% else %}
+                        <video controls preload="metadata" style="width: 100%; max-height: 450px; border-radius: var(--radius-lg); margin-top: 0.5rem; background: #000; box-shadow: 0 4px 20px rgba(0,0,0,0.2);" poster="">
+                            <source src="{{ lesson.attachment_url }}" type="video/{% if lesson.attachment_type == 'mov' %}quicktime{% else %}{{ lesson.attachment_type }}{% endif %}">
+                            {{ _('Your browser does not support the video tag.') }}
+                        </video>
+                        <div style="margin-top: 0.75rem;">
+                            <a href="{{ url_for('download_resource', category_id=category.id, lesson_id=lesson.id) }}" class="btn btn-sm btn-outline">
+                                💾 Download Video
+                            </a>
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <a href="{{ url_for('download_resource', category_id=category.id, lesson_id=lesson.id) }}" class="btn btn-outline">
+                        💾 {{ _('Download Attachment') }} ({{ lesson.attachment_type|upper }})
+                    </a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Personal Notes for Employees -->
+        {% if session.role == 'employee' %}
+        <div style="margin-top: 1.25rem;">
+            <div class="card" style="padding: 1rem;">
+                <h3 style="font-size: 1rem; margin-bottom: 0.5rem;">📝 My Notes</h3>
+                <form method="POST" action="{{ url_for('save_lesson_note', category_id=category.id, lesson_id=lesson.id) }}">
+                    <textarea name="note" rows="6" class="form-input" style="width:100%;">{{ note_content or '' }}</textarea>
+                    <div style="margin-top:0.5rem; display:flex; gap:0.5rem;">
+                        <button type="submit" class="btn btn-primary btn-sm">Save Note</button>
+                        {% if note_content %}
+                            <button type="submit" name="delete_note" value="1" class="btn btn-outline btn-sm">Delete</button>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Completion & Navigation -->
+        <div style="margin-top: 1.5rem;">
+            {% if session.role == 'employee' %}
+                {% if lesson_assessment %}
+                    {% if not assessment_submitted %}
+                        <!-- Quiz exists but not yet attempted — hide Mark as Complete, show Take Quiz -->
+                        <div class="alert alert-info" style="text-align: center; margin-bottom: 1.5rem; border-left: 4px solid var(--accent);">
+                            <i class='bx bx-pencil'></i> <strong>{{ _('Quiz Required') }}</strong> — {{ _('Attempt the quiz below to unlock the Mark as Complete button.') }}
+                            <div style="margin-top: 1rem;">
+                                <a href="{{ url_for('take_assessment', category_id=category.id, assessment_id=lesson_assessment.id) }}" class="btn btn-primary btn-lg">📝 {{ _('Take Quiz Now') }}</a>
+                            </div>
+                        </div>
+                    {% else %}
+                        <!-- Quiz attempted — show Mark as Complete button -->
+                        {% if not is_completed %}
+                            <form method="POST" action="{{ url_for('complete_lesson', category_id=category.id, lesson_id=lesson.id) }}" style="text-align: center; margin-bottom: 1rem;">
+                                <button type="submit" class="btn btn-primary btn-lg">✅ {{ _('Mark as Complete') }}</button>
+                            </form>
+                        {% else %}
+                            <div style="text-align: center; margin-bottom: 1rem;">
+                                <span class="badge badge-success" style="font-size: 0.85rem; padding: 0.5rem 1.5rem;">✓ {{ _('Lesson Completed') }}</span>
+                            </div>
+                        {% endif %}
+                    {% endif %}
+                {% else %}
+                    <!-- No quiz added yet — employee cannot mark complete -->
+                    <div class="alert alert-warning" style="text-align: center; margin-bottom: 1rem; border-style: dashed;">
+                        <i class='bx bx-time'></i> {{ _('A quiz must be added by the admin before you can mark this lesson as complete.') }}
+                    </div>
+                {% endif %}
+            {% elif session.role in ('admin', 'admin') %}
+                {% if not lesson_assessment %}
+                    <div style="text-align: center; margin-bottom: 1rem; padding: 1.5rem; border: 2px dashed var(--border); border-radius: var(--radius-lg);">
+                        <p style="color: var(--text-muted); margin-bottom: 1rem;">{{ _('This lesson is missing a required assessment.') }}</p>
+                        <a href="{{ url_for('create_assessment', category_id=category.id) }}?lesson_id={{ lesson.id }}" class="btn btn-primary">
+                            <i class='bx bx-plus'></i> {{ _('Add Quiz') }}
+                        </a>
+                    </div>
+                {% else %}
+                    <div style="text-align: center; margin-bottom: 1rem;">
+                        <a href="{{ url_for('edit_assessment', category_id=category.id, assessment_id=lesson_assessment.id) }}" class="btn btn-sm btn-outline">
+                            <i class='bx bx-edit'></i> {{ _('Manage Quiz') }}
+                        </a>
+                    </div>
+                {% endif %}
+            {% endif %}
+            
+            <div class="lesson-nav">
+                {% if prev_lesson %}
+                <a href="{{ url_for('view_lesson', category_id=category.id, lesson_id=prev_lesson.id) }}" class="btn btn-secondary">
+                    ← {{ prev_lesson.title }}
+                </a>
+                {% else %}
+                <div></div>
+                {% endif %}
+                
+                {% if next_lesson %}
+                <a href="{{ url_for('view_lesson', category_id=category.id, lesson_id=next_lesson.id) }}" class="btn btn-primary">
+                    {{ next_lesson.title }} →
+                </a>
+                {% else %}
+                <a href="{{ url_for('category_detail', category_id=category.id) }}" class="btn btn-primary">
+                    {{ _('Back to category') }} →
+                </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Q&A Discussion Forum -->
+        <div id="qa-section" style="margin-top: 2rem;">
+            <div class="card" style="padding: 1.5rem;">
+                <h3 style="font-size: 1.1rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <i class='bx bx-conversation'></i> Lesson Discussion Forum
+                </h3>
+
+                <!-- Ask a Question -->
+                <form method="POST" action="{{ url_for('ask_lesson_question', category_id=category.id, lesson_id=lesson.id) }}" style="margin-bottom: 1.5rem;">
+                    <div style="display: flex; gap: 0.5rem;">
+                        <input type="text" name="question" class="form-input" placeholder="Ask a question about this lesson..." required style="flex: 1;">
+                        <button type="submit" class="btn btn-primary btn-sm"><i class='bx bx-send'></i> Ask</button>
+                    </div>
+                </form>
+
+                <!-- Existing Q&A -->
+                {% if qa_items %}
+                    {% for qa in qa_items %}
+                    <div style="border-left: 3px solid var(--accent); padding: 0.75rem 1rem; margin-bottom: 1rem; background: var(--bg-input); border-radius: 0 8px 8px 0;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                            <strong style="font-size: 0.9rem;">{{ qa.author_name }}</strong>
+                            <span style="font-size: 0.7rem; color: var(--text-muted);">
+                                {% if qa.author_role == 'admin' %}<span class="badge badge-primary" style="font-size:0.65rem;">Trainer</span>{% endif %}
+                                {{ qa.created_at|timeago }}
+                            </span>
+                        </div>
+                        <p style="margin: 0 0 0.5rem; font-size: 0.92rem;"><strong>Q:</strong> {{ qa.question }}</p>
+                        
+                        {% if qa.answer %}
+                            <div style="background: rgba(0,191,165,0.08); padding: 0.5rem 0.75rem; border-radius: 6px; margin-top: 0.5rem;">
+                                <strong style="color: #00bfa5; font-size: 0.8rem;">✅ Answer:</strong>
+                                <p style="margin: 0.25rem 0 0; font-size: 0.88rem;">{{ qa.answer }}</p>
+                            </div>
+                        {% else %}
+                            {% if session.role in ('admin', 'lecturer') %}
+                            <form method="POST" action="{{ url_for('answer_lesson_question', category_id=category.id, lesson_id=lesson.id, qa_id=qa.id) }}" style="margin-top: 0.5rem;">
+                                <div style="display: flex; gap: 0.5rem;">
+                                    <input type="text" name="answer" class="form-input" placeholder="Type your answer..." required style="flex: 1; font-size: 0.85rem;">
+                                    <button type="submit" class="btn btn-sm" style="background: #00bfa5; color: white; border: none;">Reply</button>
+                                </div>
+                            </form>
+                            {% else %}
+                            <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0.25rem 0 0;"><em>Awaiting answer from a trainer...</em></p>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p style="color: var(--text-muted); text-align: center; font-size: 0.9rem;">No questions yet. Be the first to ask!</p>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

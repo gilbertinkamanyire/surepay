@@ -33,7 +33,7 @@
                     <div class="sync-card">
                         <div class="sync-info">
                             <h3>{{ match.peer_name }}</h3>
-                            <span class="sync-course">{{ match.course_title }}</span>
+                            <span class="sync-category">{{ match.category_title }}</span>
                         </div>
                         
                         <div class="sync-tools">
@@ -97,12 +97,12 @@
                             <div class="peer-details">
                                 <div class="peer-name-row">
                                     <h4>{{ peer.full_name }}</h4>
-                                    <span class="peer-role">{% if peer.progress > my_progress.get(peer.course_id, 0) %}Mentor{% else %}Peer{% endif %}</span>
+                                    <span class="peer-role">{% if peer.progress > my_progress.get(peer.category_id, 0) %}Mentor{% else %}Peer{% endif %}</span>
                                 </div>
-                                <p class="peer-course-meta">{{ peer.course_title }} · {{ peer.progress }}% Progress</p>
+                                <p class="peer-category-meta">{{ peer.category_title }} · {{ peer.progress }}% Progress</p>
                             </div>
                             <div class="peer-btn">
-                                <a href="{{ url_for('synergy_sync', peer_id=peer.id, course_id=peer.course_id) }}" class="btn btn-outline btn-sm">
+                                <a href="{{ url_for('synergy_sync', peer_id=peer.id, category_id=peer.category_id) }}" class="btn btn-outline btn-sm">
                                     <i class='bx bx-sync'></i> Request Sync
                                 </a>
                             </div>
@@ -110,7 +110,7 @@
                         {% endfor %}
                     {% else %}
                         <div class="glass-empty">
-                            <p>No new peers discovered yet. Explore more courses to find collaborators!</p>
+                            <p>No new peers discovered yet. Explore more categories to find collaborators!</p>
                         </div>
                     {% endif %}
                 </div>
@@ -122,7 +122,7 @@
             <div class="glass-card chart-card">
                 <h3><i class='bx bx-line-chart'></i> Platform Synergy</h3>
                 <canvas id="synergyChart" height="200"></canvas>
-                <p class="chart-caption">Active collaborations across top courses.</p>
+                <p class="chart-caption">Active collaborations across top categories.</p>
             </div>
 
             <div class="glass-card tip-card">
@@ -265,7 +265,7 @@
         box-shadow: 0 10px 25px rgba(0,0,0,0.03);
     }
     .sync-info h3 { margin: 0; font-size: 1.2rem; }
-    .sync-course { color: #6200ea; font-size: 0.85rem; font-weight: 700; }
+    .sync-category { color: #6200ea; font-size: 0.85rem; font-weight: 700; }
 
     .input-group-sync {
         display: flex;
@@ -330,7 +330,7 @@
     .peer-name-row { display: flex; align-items: center; gap: 0.5rem; }
     .peer-name-row h4 { margin: 0; font-size: 1.05rem; }
     .peer-role { font-size: 0.65rem; font-weight: 800; padding: 0.2rem 0.5rem; background: #eef1ff; color: #3b82f6; border-radius: 0.5rem; text-transform: uppercase; }
-    .peer-course-meta { margin: 0.1rem 0 0; font-size: 0.85rem; color: #777; }
+    .peer-category-meta { margin: 0.1rem 0 0; font-size: 0.85rem; color: #777; }
 
     /* Sidebar Cards */
     .glass-card { background: white; padding: 1.75rem; border-radius: 1.5rem; border: 1px solid #eef0f5; margin-bottom: 1.5rem; }
